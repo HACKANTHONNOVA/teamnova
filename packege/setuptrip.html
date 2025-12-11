@@ -44,6 +44,15 @@
       --logo-bg-end: #15803d;
     }
 
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) brightness(1.2);
+      cursor: pointer;
+    }
+
+    [data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: brightness(0);
+    }
+
     [data-theme="light"] .app-shell {
       background: #ffffff !important;
     }
@@ -547,21 +556,15 @@
 
           <div class="field">
             <label>Trip start</label>
-            <div style="display:flex; gap:8px;">
-              <input id="startDate" type="date" style="flex:1;" />
-              <input id="startTime" type="time" style="flex:1;" />
-            </div>
+            <input id="startDate" type="date" style="width:100%;" />
             <div class="field-hint">
-              Select your trip starting date from calendar and time separately.
+              Select your trip starting date.
             </div>
           </div>
 
           <div class="field">
             <label>Trip end</label>
-            <div style="display:flex; gap:8px;">
-              <input id="endDate" type="date" style="flex:1;" />
-              <input id="endTime" type="time" style="flex:1;" />
-            </div>
+            <input id="endDate" type="date" style="width:100%;" />
             <div class="field-hint">
               You can extend the trip duration from the active trip screen.
             </div>
@@ -780,16 +783,14 @@
         const to = document.getElementById('to').value.trim();
         const radius = document.getElementById('radius').value;
         const startDate = document.getElementById('startDate').value;
-        const startTime = document.getElementById('startTime').value;
         const endDate = document.getElementById('endDate').value;
-        const endTime = document.getElementById('endTime').value;
         const travellers = document.getElementById('travellers').value;
         const mode = document.getElementById('mode').value;
         const notes = document.getElementById('notes').value.trim();
 
-        console.log('startTrip: collected values', { from, to, radius, startDate, startTime, endDate, endTime, travellers, mode });
+        console.log('startTrip: collected values', { from, to, radius, startDate, endDate, travellers, mode });
 
-        if (!from || !to || !startDate || !startTime || !endDate || !endTime) {
+        if (!from || !to || !startDate || !endDate) {
           alert('Please fill in all required fields');
           console.warn('startTrip: validation failed');
           return;
@@ -799,8 +800,8 @@
           from,
           to,
           radius: radius ? Number(radius) : null,
-          start: `${startDate} ${startTime}`,
-          end: `${endDate} ${endTime}`,
+          start: startDate,
+          end: endDate,
           travellers: travellers ? Number(travellers) : 1,
           mode,
           notes,
