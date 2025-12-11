@@ -1,2 +1,3 @@
 
-				exchange.sendResponseHeaders(405, -1);
+			exchange.close();
+		}

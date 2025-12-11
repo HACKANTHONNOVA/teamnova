@@ -10,7 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class backend {
+public class Backend {
 	private static final Path BASE = Paths.get("packege");
 	private static final Path USER_DATA = BASE.resolve("userData.json");
 
@@ -163,28 +163,42 @@ public class backend {
 
 		private int generateSecurityIndex(String city) {
 			// Demo values for different cities
-			return switch (city.toLowerCase()) {
-				case "bengaluru" -> 72;
-				case "delhi" -> 58;
-				case "mumbai" -> 68;
-				case "goa" -> 85;
-				case "jaipur" -> 64;
-				case "agra" -> 70;
-				default -> 65 + (city.hashCode() % 20);
-			};
+			switch (city.toLowerCase()) {
+				case "bengaluru":
+					return 72;
+				case "delhi":
+					return 58;
+				case "mumbai":
+					return 68;
+				case "goa":
+					return 85;
+				case "jaipur":
+					return 64;
+				case "agra":
+					return 70;
+				default:
+					return 65 + (city.hashCode() % 20);
+			}
 		}
 
 		private int generateWeatherIndex(String city) {
 			// Demo values for different cities
-			return switch (city.toLowerCase()) {
-				case "bengaluru" -> 75;
-				case "delhi" -> 62;
-				case "mumbai" -> 70;
-				case "goa" -> 80;
-				case "jaipur" -> 68;
-				case "agra" -> 72;
-				default -> 70 + (city.hashCode() % 25);
-			};
+			switch (city.toLowerCase()) {
+				case "bengaluru":
+					return 75;
+				case "delhi":
+					return 62;
+				case "mumbai":
+					return 70;
+				case "goa":
+					return 80;
+				case "jaipur":
+					return 68;
+				case "agra":
+					return 72;
+				default:
+					return 70 + (city.hashCode() % 25);
+			}
 		}
 	}
 }
