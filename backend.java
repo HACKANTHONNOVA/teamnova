@@ -18,7 +18,7 @@ public class backend {
 		int port = 8080;
 		HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
 
-		server.createContext("/", exchange -> redirect(exchange, "/profile"));
+		server.createContext("/", exchange -> redirect(exchange, "/login"));
 		server.createContext("/login", new StaticFileHandler(BASE.resolve("login.html")));
 		server.createContext("/home", new StaticFileHandler(BASE.resolve("homePage.html")));
 		server.createContext("/trip-setup", new StaticFileHandler(BASE.resolve("setuptrip.html")));
