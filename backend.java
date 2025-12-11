@@ -27,6 +27,7 @@ public class backend {
 		server.createContext("/profile", new StaticFileHandler(BASE.resolve("profile.html")));
 		server.createContext("/api/sos", new SOSHandler());
 		server.createContext("/api/user", new UserDataHandler());
+		server.createContext("/api/indices", new IndicesHandler());
 
 		server.setExecutor(null);
 		server.start();
@@ -120,6 +121,70 @@ public class backend {
 
 			exchange.sendResponseHeaders(405, -1);
 			exchange.close();
+		}
+	}
+
+	private static class IndicesHandler implements HttpHandler {
+		@Override
+		public void handle(HttpExchange exchange) throws IOException {
+			if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+				exchange.sendResponseHeaders(405, -1);
+				exchange.close();
+				return;
+			}
+
+			String query = exchange.getRequestURI().getQuery();
+			String city = "Bengaluru";
+			if (query != null && query.contains("city=")) {
+				city = query.split("city=")[1].split("&")[0];
+				try {
+					city = java.net.URLDecoder.decode(city, StandardCharsets.UTF_8);
+				} catch (Exception e) {
+					// Keep original city
+				}
+			}
+
+			// Generate demo indices based on city
+			int securityIndex = generateSecurityIndex(city);
+			int weatherIndex = generateWeatherIndex(city);
+
+			String response = String.format(
+					"{\"city\":\"%s\",\"securityIndex\":%d,\"weatherIndex\":%d}",
+					city, securityIndex, weatherIndex
+			);
+
+			exchange.getResponseHeaders().add("Content-Type", "application/json; charset=UTF-8");
+			exchange.sendResponseHeaders(200, response.getBytes().length);
+			try (OutputStream os = exchange.getResponseBody()) {
+				os.write(response.getBytes(StandardCharsets.UTF_8));
+			}
+			exchange.close();
+		}
+
+		private int generateSecurityIndex(String city) {
+			// Demo values for different cities
+			return switch (city.toLowerCase()) {
+				case "bengaluru" -> 72;
+				case "delhi" -> 58;
+				case "mumbai" -> 68;
+				case "goa" -> 85;
+				case "jaipur" -> 64;
+				case "agra" -> 70;
+				default -> 65 + (city.hashCode() % 20);
+			};
+		}
+
+		private int generateWeatherIndex(String city) {
+			// Demo values for different cities
+			return switch (city.toLowerCase()) {
+				case "bengaluru" -> 75;
+				case "delhi" -> 62;
+				case "mumbai" -> 70;
+				case "goa" -> 80;
+				case "jaipur" -> 68;
+				case "agra" -> 72;
+				default -> 70 + (city.hashCode() % 25);
+			};
 		}
 	}
 }

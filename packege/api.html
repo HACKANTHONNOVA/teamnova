@@ -1,0 +1,13 @@
+btnEstimateIndices.addEventListener('click', async () => {
+    const city = fromInput.value || 'Bengaluru';
+    try {
+        const res = await fetch(`/api/indices?city=${encodeURIComponent(city)}`);
+        const data = await res.json();
+        setIndexUI(data.weatherIndex, weatherIndexValue, weatherIndexBadge, weatherIndexMeter);
+        setIndexUI(data.securityIndex, securityIndexValue, securityIndexBadge, securityIndexMeter);
+        showToast(`Indices updated for ${data.city}`);
+    } catch(e) {
+        showToast('Using demo indices', true);
+        // Fallback to your existing demo logic
+    }
+});
