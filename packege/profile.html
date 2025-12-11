@@ -102,10 +102,10 @@
   }
 
   .profile-header { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
-  .avatar { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; background:linear-gradient(180deg,#bbf7d0,#16a34a); color:#022c22; font-size:18px; }
-  .meta { display:flex; flex-direction:column; gap:2px; }
-  .meta .name { font-weight:700; font-size:16px; }
-  .meta .sub { font-size:12px; color:var(--muted); }
+  .profile-icon { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; background:linear-gradient(180deg,#bbf7d0,#16a34a); color:#022c22; font-size:18px; }
+  .profile-info { display:flex; flex-direction:column; gap:2px; }
+  .profile-info h2 { font-weight:700; font-size:16px; margin:0; }
+  .profile-info p { font-size:12px; color:var(--muted); margin:0; }
 
   .label { font-size:12px; color:var(--muted); margin-bottom:6px; }
   .input { width:100%; padding:9px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit; font-size:14px; box-sizing:border-box; }
@@ -175,10 +175,11 @@
 <div id="drawer" class="drawer" aria-hidden="true">
   <div class="panel" role="dialog" aria-modal="true" aria-label="Profile panel">
     <div class="profile-header">
-      <div id="panelAvatar" class="avatar">U</div>
-      <div class="meta">
-        <div id="panelName" class="name">User</div>
-        <div class="sub">Manage your personal details</div>
+      <div id="userInitialIcon" class="profile-icon">U</div>
+
+      <div class="profile-info">
+        <h2 id="userProfileName">User Name</h2>
+        <p>Smart Tourist Safety & SOS</p>
       </div>
       <div style="margin-left:auto;">
         <button id="editToggle" class="btn ghost" style="padding:6px 10px;min-width:72px;">Edit</button>
@@ -250,8 +251,8 @@
   const historyList = document.getElementById("historyList");
   const homeHistory = document.getElementById("homeHistory");
   const profileInitials = document.getElementById("profileInitials");
-  const panelAvatar = document.getElementById("panelAvatar");
-  const panelName = document.getElementById("panelName");
+  const userInitialIcon = document.getElementById("userInitialIcon");
+  const userProfileName = document.getElementById("userProfileName");
   const headerUserName = document.getElementById("headerUserName");
   const themeToggle = document.getElementById("themeToggle");
   const toast = document.getElementById("toast");
@@ -276,8 +277,8 @@
     // header name
     headerUserName.textContent = data.name || "User";
     profileInitials.textContent = initials(data.name);
-    panelAvatar.textContent = initials(data.name);
-    panelName.textContent = data.name || "User";
+    userInitialIcon.textContent = initials(data.name);
+    userProfileName.textContent = data.name || "User";
 
     // inputs
     inputName.value = data.name || "";

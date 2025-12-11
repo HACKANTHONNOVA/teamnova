@@ -174,6 +174,20 @@
       gap: 4px;
     }
 
+    .user-initial-icon {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #bbf7d0, #16a34a);
+      color: #022c22;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
     .user-id-pill {
       font-size: 10px;
       padding: 4px 8px;
@@ -401,10 +415,10 @@
   <div class="app-shell">
     <!-- Header -->
     <header class="app-header">
-      <button class="header-left" type="button" onclick="location.href='/profile'" aria-label="Go to profile">
-        <div class="logo-dot">KY</div>
+      <button class="header-left" type="button" onclick="location.href='/profile'" aria-label="Go to profile" style="display: flex; align-items: center; gap: 10px;">
+        <div id="userInitialIcon" class="user-initial-icon">U</div>
         <div class="app-title-block">
-          <div class="app-name">KawachYatri</div>
+          <div id="userProfileName" class="app-name">User</div>
           <div class="app-subtitle">Smart Tourist Safety & SOS</div>
         </div>
       </button>
@@ -529,6 +543,34 @@
       }
       document.documentElement.setAttribute('data-theme', savedTheme);
       updateThemeUI(savedTheme);
+    })();
+
+    // Load and display profile data
+    (function() {
+      // Read the saved profile (same object you used earlier)
+      let profileData = JSON.parse(localStorage.getItem("profile_history_v1")) || {
+        name: "Traveller",
+        phone: "",
+        guardian: "",
+        history: []
+      };
+
+      // Extract initials
+      function getInitial(name) {
+        if (!name) return "U";
+        return name[0].toUpperCase();
+      }
+
+      // Update KawachYatri header
+      const userProfileName = document.getElementById("userProfileName");
+      const userInitialIcon = document.getElementById("userInitialIcon");
+      
+      if (userProfileName) {
+        userProfileName.textContent = profileData.name;
+      }
+      if (userInitialIcon) {
+        userInitialIcon.textContent = getInitial(profileData.name);
+      }
     })();
   </script>
 </body>
