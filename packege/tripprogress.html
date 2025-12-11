@@ -20,6 +20,29 @@
       --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.7);
       --radius-xl: 24px;
       --radius-full: 999px;
+      --logo-color: #022c22;
+      --logo-bg-start: #bbf7d0;
+      --logo-bg-end: #16a34a;
+      --input-bg: #020617;
+    }
+
+    html[data-theme="light"] .app-shell {
+      --bg: #f8fafc;
+      --bg-grad-1: #f1f5f9;
+      --bg-grad-2: #e2e8f0;
+      --card-bg: #ffffff;
+      --accent: #16a34a;
+      --accent-soft: rgba(22, 163, 74, 0.12);
+      --danger: #dc2626;
+      --text-main: #0f172a;
+      --text-soft: #475569;
+      --border-soft: #cbd5e1;
+      --input-bg: #ffffff;
+      --shadow-soft: 0 14px 26px rgba(0, 0, 0, 0.12);
+      --logo-color: #f0fdf4;
+      --logo-bg-start: #16a34a;
+      --logo-bg-end: #15803d;
+      background: #ffffff;
     }
 
     * {
@@ -84,10 +107,8 @@
     .app-header {
       border-radius: 24px;
       padding: 14px 16px;
-      background: radial-gradient(circle at 0 0, #22c55e22 0, transparent 55%),
-        radial-gradient(circle at 100% 0, #3b82f622 0, transparent 60%),
-        #020617;
-      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: var(--card-bg);
+      border: 1px solid var(--border-soft);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -96,12 +117,9 @@
       overflow: hidden;
     }
 
-    .app-header::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 0 120%, #22c55e11, transparent 65%);
-      pointer-events: none;
+    [data-theme="light"] .app-header {
+      background: var(--card-bg);
+      border: 1px solid var(--border-soft);
     }
 
     .header-left {
@@ -172,6 +190,27 @@
       color: #bbf7d0;
     }
 
+    .theme-toggle {
+      background: var(--card-bg);
+      border: 1px solid var(--border-soft);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .theme-toggle:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      transform: scale(1.05);
+    }
+
     .status-dot {
       width: 7px;
       height: 7px;
@@ -182,7 +221,7 @@
 
     /* Card */
     .card {
-      background: radial-gradient(circle at top, #020617, #020617 70%);
+      background: radial-gradient(circle at top, var(--card-bg), var(--card-bg) 70%);
       border-radius: var(--radius-xl);
       border: 1px solid var(--border-soft);
       padding: 18px 16px 16px;
@@ -299,8 +338,8 @@
     /* Mini trip details */
     .trip-mini-card {
       border-radius: 18px;
-      border: 1px solid rgba(31, 41, 55, 0.95);
-      background: radial-gradient(circle at top left, #1d4ed822, transparent 55%);
+      border: 1px solid var(--border-soft);
+      background: radial-gradient(circle at top left, var(--accent-soft), transparent 65%);
       padding: 9px 10px;
       font-size: 11px;
       display: flex;
@@ -327,9 +366,9 @@
       padding: 3px 8px;
       border-radius: 999px;
       font-size: 10px;
-      background: rgba(34, 197, 94, 0.16);
+      background: rgba(34, 197, 94, 0.14);
       border: 1px solid rgba(34, 197, 94, 0.6);
-      color: #bbf7d0;
+      color: var(--text-main);
       display: inline-flex;
       align-items: center;
       gap: 5px;
@@ -372,6 +411,12 @@
       border: 1px solid rgba(34, 197, 94, 0.5);
       color: #bbf7d0;
       margin-top: 6px;
+    }
+
+    [data-theme="light"] .btn-soft {
+      background: rgba(22, 163, 74, 0.12);
+      border-color: rgba(22, 163, 74, 0.35);
+      color: #0f172a; /* darker text for readability on light background */
     }
 
     .btn-ghost {
@@ -434,6 +479,10 @@
           <span class="status-dot"></span>
           Trip active · Geo-fence ON
         </div>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+          <span id="theme-icon">🌙</span>
+          <span id="theme-text">Dark</span>
+        </button>
       </div>
     </header>
 
@@ -522,6 +571,37 @@
     </div>
   </div>
       <script>
+        function toggleTheme() {
+          const html = document.documentElement;
+          const current = html.getAttribute('data-theme');
+          const next = current === 'light' ? 'dark' : 'light';
+          html.setAttribute('data-theme', next);
+          localStorage.setItem('theme', next);
+          updateThemeUI(next);
+        }
+
+        function updateThemeUI(theme) {
+          const icon = document.getElementById('theme-icon');
+          const text = document.getElementById('theme-text');
+          if (!icon || !text) return;
+          if (theme === 'light') {
+            icon.textContent = '☀️';
+            text.textContent = 'Light';
+          } else {
+            icon.textContent = '🌙';
+            text.textContent = 'Dark';
+          }
+        }
+
+        (function initTheme() {
+          let saved = localStorage.getItem('theme');
+          if (!saved) {
+            saved = 'light'; // default to light theme
+          }
+          document.documentElement.setAttribute('data-theme', saved);
+          updateThemeUI(saved);
+        })();
+
         // Load active trip from localStorage and populate UI
         function loadActiveTrip() {
           try {
@@ -553,7 +633,7 @@
           if (!trip) {
             // No active trip — show link back to setup
             const card = document.getElementById('trip-mini-card');
-            card.innerHTML = '<div style="padding:12px; text-align:center; color:var(--text-soft);">No active trip found. <a href="setuptrip.html">Create a trip</a></div>';
+            card.innerHTML = '<div style="padding:12px; text-align:center; color:var(--text-soft);">No active trip found. <a href="/trip-setup">Create a trip</a></div>';
             document.getElementById('btn-end').disabled = true;
             return;
           }
