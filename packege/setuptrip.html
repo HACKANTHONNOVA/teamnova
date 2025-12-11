@@ -157,6 +157,16 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      border: none;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .header-left:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+      border-radius: 12px;
     }
 
     .logo-dot {
@@ -196,6 +206,20 @@
       flex-direction: column;
       align-items: flex-end;
       gap: 4px;
+    }
+
+    .user-initial-icon {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #bbf7d0, #16a34a);
+      color: #022c22;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
     }
 
     .user-id-pill {
@@ -481,13 +505,13 @@
   <div class="app-shell">
     <!-- Header -->
     <header class="app-header">
-      <div class="header-left">
-        <div class="logo-dot">KY</div>
+      <button class="header-left" type="button" onclick="location.href='/profile'" aria-label="Go to profile" style="display: flex; align-items: center; gap: 10px;">
+        <div id="userInitialIcon" class="user-initial-icon">U</div>
         <div class="app-title-block">
-          <div class="app-name">KawachYatri</div>
+          <div id="userProfileName" class="app-name">User</div>
           <div class="app-subtitle">Start Trip · Safety & Geo-fence</div>
         </div>
-      </div>
+      </button>
       <div class="header-right">
         <div class="user-id-pill">ID: STSM-USER-001</div>
         <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" style="position: relative; top: auto; right: auto; margin-left: 0;">
@@ -1039,6 +1063,30 @@
       
       // Initialize date restrictions
       initDateRestrictions();
+    })();
+
+    // Load and display profile data in header
+    (function() {
+      try {
+        const profileData = JSON.parse(localStorage.getItem('profile_history_v1')) || {
+          name: 'Traveller',
+          phone: '',
+          guardian: '',
+          history: []
+        };
+
+        const getInitial = (name) => {
+          if (!name) return 'U';
+          return name[0].toUpperCase();
+        };
+
+        const userProfileName = document.getElementById('userProfileName');
+        const userInitialIcon = document.getElementById('userInitialIcon');
+        if (userProfileName) userProfileName.textContent = profileData.name || 'Traveller';
+        if (userInitialIcon) userInitialIcon.textContent = getInitial(profileData.name);
+      } catch (e) {
+        // no-op if localStorage unavailable
+      }
     })();
   </script>
 </body>

@@ -359,10 +359,10 @@
           <span class="pill-step">Step 1 of 2</span>
         </div>
 
-        <form class="form-grid" action="/home" method="get">
+        <form class="form-grid" id="loginForm" action="/home" method="get">
           <div class="field">
-            <label for="name">Full Name</label>
-            <input id="name" type="text" placeholder="e.g., Rohan Kumar" required />
+            <label for="fullName">Full Name</label>
+            <input id="fullName" type="text" placeholder="e.g., Rohan Kumar" required />
           </div>
 
           <div class="field">
@@ -405,9 +405,9 @@
           </div>
 
           <div class="field">
-            <label for="pin">4-digit Safety PIN</label>
+            <label for="safetyPin">4-digit Safety PIN</label>
             <input
-              id="pin"
+              id="safetyPin"
               type="password"
               maxlength="4"
               inputmode="numeric"
@@ -419,7 +419,7 @@
             </div>
           </div>
 
-          <button type="submit" class="btn btn-primary">
+          <button type="submit" id="btnContinue" class="btn btn-primary">
             Continue &nbsp;→
           </button>
         </form>
@@ -478,6 +478,46 @@
       document.documentElement.setAttribute('data-theme', savedTheme);
       updateThemeUI(savedTheme);
     })();
+
+    // Secure registration: send to backend and persist minimal local profile
+    function submitRegistration(event) {
+      event.preventDefault();
+      try {
+        const name = document.getElementById('fullName')?.value?.trim() || '';
+        const phone = document.getElementById('mobile')?.value?.trim() || '';
+        const guardian = document.getElementById('guardian')?.value?.trim() || '';
+        const email = document.getElementById('email')?.value?.trim() || '';
+
+        const payload = { name, phone, guardian, email };
+
+        // Store in attached file packege/userData.json via existing endpoint
+        fetch('/api/user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(() => {
+          const local = { name, phone, guardian, history: [] };
+          localStorage.setItem('profile_history_v1', JSON.stringify(local));
+          location.href = '/home';
+        })
+        .catch(err => {
+          console.error('Registration failed', err);
+          alert('Could not save profile, try again');
+        });
+      } catch(e) {
+        console.error(e);
+        alert('Unexpected error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('btnContinue');
+      const form = document.getElementById('loginForm');
+      if (btn) btn.addEventListener('click', submitRegistration);
+      if (form) form.addEventListener('submit', submitRegistration);
+    });
   </script>
 </body>
 </html>
