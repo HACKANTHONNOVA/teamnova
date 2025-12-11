@@ -516,7 +516,7 @@
         </div>
       </button>
       <div class="header-right">
-        <div class="user-id-pill">ID: STSM-USER-001</div>
+        <div id="userIdPill" class="user-id-pill">ID: STSM-USER-001</div>
         <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" style="position: relative; top: auto; right: auto; margin-left: 0;">
           <span id="theme-icon">🌙</span>
           <span id="theme-text">Dark</span>
@@ -1097,6 +1097,7 @@
       initDateRestrictions();
     })();
 
+<<<<<<< HEAD
     // Google Maps API key management
     let GOOGLE_MAPS_API_KEY = localStorage.getItem('gmaps_api_key') || '';
 
@@ -1299,6 +1300,18 @@
       const modal = document.getElementById('radiusPickerModal');
       if (modal) modal.remove();
       showToast('Safe zone updated from map.');
+=======
+    // Generate or retrieve unique user ID
+    function generateUserId() {
+      let userId = localStorage.getItem('kawachyatri_user_id');
+      if (!userId) {
+        // Generate UUID v4 format: STSM-XXXX-XXXX
+        const randomPart = () => Math.random().toString(36).substring(2, 6).toUpperCase();
+        userId = `STSM-${randomPart()}-${randomPart()}`;
+        localStorage.setItem('kawachyatri_user_id', userId);
+      }
+      return userId;
+>>>>>>> refs/remotes/origin/main
     }
 
     // Load and display profile data in header
@@ -1320,6 +1333,10 @@
         const userInitialIcon = document.getElementById('userInitialIcon');
         if (userProfileName) userProfileName.textContent = profileData.name || 'Traveller';
         if (userInitialIcon) userInitialIcon.textContent = getInitial(profileData.name);
+        
+        // Update user ID
+        const userIdPill = document.getElementById('userIdPill');
+        if (userIdPill) userIdPill.textContent = 'ID: ' + generateUserId();
       } catch (e) {
         // no-op if localStorage unavailable
       }
