@@ -507,7 +507,7 @@
         </div>
       </button>
       <div class="header-right">
-        <div class="user-id-pill">ID: STSM-USER-001</div>
+        <div id="userIdPill" class="user-id-pill">ID: STSM-USER-001</div>
         <div class="trip-status-pill">
           <span class="status-dot"></span>
           Trip active · Geo-fence ON
@@ -635,6 +635,18 @@
           updateThemeUI(saved);
         })();
 
+        // Generate or retrieve unique user ID
+        function generateUserId() {
+          let userId = localStorage.getItem('kawachyatri_user_id');
+          if (!userId) {
+            // Generate UUID v4 format: STSM-XXXX-XXXX
+            const randomPart = () => Math.random().toString(36).substring(2, 6).toUpperCase();
+            userId = `STSM-${randomPart()}-${randomPart()}`;
+            localStorage.setItem('kawachyatri_user_id', userId);
+          }
+          return userId;
+        }
+
         // Load and display user profile in header
         (function loadProfile() {
           try {
@@ -654,6 +666,10 @@
             const userInitialIcon = document.getElementById('userInitialIcon');
             if (userProfileName) userProfileName.textContent = profileData.name || 'Traveller';
             if (userInitialIcon) userInitialIcon.textContent = getInitial(profileData.name);
+            
+            // Update user ID
+            const userIdPill = document.getElementById('userIdPill');
+            if (userIdPill) userIdPill.textContent = 'ID: ' + generateUserId();
           } catch (e) {
             console.warn('Failed to load profile', e);
           }

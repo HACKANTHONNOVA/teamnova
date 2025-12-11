@@ -42,7 +42,8 @@ public class backend {
 	private static final Path USERS_DB = BASE.resolve("users.json");
 
 	public static void main(String[] args) throws IOException {
-		int port = 8080;
+		// Use PORT environment variable for cloud deployment, default to 8080 for local
+		int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
 		HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
 
 		server.createContext("/", exchange -> redirect(exchange, "/login"));
