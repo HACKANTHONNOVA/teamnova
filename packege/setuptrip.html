@@ -545,28 +545,28 @@
             <div class="index-card">
               <div class="index-label">🛡️ Security index</div>
               <div class="index-value-row">
-                <span>-- / 100</span>
-                <span class="badge">Estimating…</span>
+                <span id="securityIndexValue">-- / 100</span>
+                <span class="badge" id="securityIndexBadge">Estimating…</span>
               </div>
               <div class="index-meter">
-                <div class="index-meter-fill"></div>
+                <div class="index-meter-fill" id="securityIndexMeter"></div>
               </div>
             </div>
 
             <div class="index-card">
               <div class="index-label">🌦️ Weather index</div>
               <div class="index-value-row">
-                <span>-- / 100</span>
-                <span class="badge">Estimating…</span>
+                <span id="weatherIndexValue">-- / 100</span>
+                <span class="badge" id="weatherIndexBadge">Estimating…</span>
               </div>
               <div class="index-meter">
-                <div class="index-meter-fill"></div>
+                <div class="index-meter-fill" id="weatherIndexMeter"></div>
               </div>
             </div>
           </div>
 
           <div class="btn-row">
-            <button type="button" class="btn btn-ghost">
+            <button type="button" class="btn btn-ghost" id="btnEstimateIndices">
               ⚙️ Use AI to estimate security & weather (UI demo)
             </button>
 
@@ -741,6 +741,60 @@
         console.error('renderInlineTripProgress failed', e);
         alert('Could not render inline trip progress — navigation likely blocked by server.');
       }
+    }
+
+    // AI Indices Estimation
+    function setIndexUI(value, valueEl, badgeEl, meterEl) {
+      if (!valueEl || !badgeEl || !meterEl) return;
+      
+      valueEl.textContent = value + ' / 100';
+      meterEl.style.width = value + '%';
+      
+      if (value >= 70) {
+        badgeEl.textContent = 'Good';
+        badgeEl.style.borderColor = '#22c55e';
+        badgeEl.style.color = '#22c55e';
+      } else if (value >= 40) {
+        badgeEl.textContent = 'Moderate';
+        badgeEl.style.borderColor = '#facc15';
+        badgeEl.style.color = '#facc15';
+      } else {
+        badgeEl.textContent = 'Caution';
+        badgeEl.style.borderColor = '#ef4444';
+        badgeEl.style.color = '#ef4444';
+      }
+    }
+
+    function showToast(msg, isError = false) {
+      alert(msg);
+    }
+
+    // Wire up estimate button
+    const btnEstimateIndices = document.getElementById('btnEstimateIndices');
+    const toInput = document.getElementById('to');
+    const weatherIndexValue = document.getElementById('weatherIndexValue');
+    const weatherIndexBadge = document.getElementById('weatherIndexBadge');
+    const weatherIndexMeter = document.getElementById('weatherIndexMeter');
+    const securityIndexValue = document.getElementById('securityIndexValue');
+    const securityIndexBadge = document.getElementById('securityIndexBadge');
+    const securityIndexMeter = document.getElementById('securityIndexMeter');
+
+    if (btnEstimateIndices) {
+      btnEstimateIndices.addEventListener('click', async () => {
+        const city = toInput.value || 'Bengaluru';
+        try {
+          const res = await fetch(`/api/indices?city=${encodeURIComponent(city)}`);
+          const data = await res.json();
+          setIndexUI(data.weatherIndex, weatherIndexValue, weatherIndexBadge, weatherIndexMeter);
+          setIndexUI(data.securityIndex, securityIndexValue, securityIndexBadge, securityIndexMeter);
+          showToast(`Indices updated for ${data.city}`);
+        } catch(e) {
+          showToast('Using demo indices', true);
+          // Fallback to demo values
+          setIndexUI(75, weatherIndexValue, weatherIndexBadge, weatherIndexMeter);
+          setIndexUI(65, securityIndexValue, securityIndexBadge, securityIndexMeter);
+        }
+      });
     }
 
     // Date restrictions
