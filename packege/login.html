@@ -21,6 +21,31 @@
       --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.7);
       --radius-xl: 24px;
       --radius-full: 999px;
+      --logo-color: #022c22;
+      --logo-bg-start: #bbf7d0;
+      --logo-bg-end: #16a34a;
+    }
+
+    [data-theme="light"] {
+      --bg: #020617;
+      --bg-grad-1: #0f172a;
+      --bg-grad-2: #020617;
+      --card-bg: #ffffff;
+      --accent: #16a34a;
+      --accent-soft: rgba(22, 163, 74, 0.15);
+      --danger: #dc2626;
+      --text-main: #000000;
+      --text-soft: #333333;
+      --border-soft: #cccccc;
+      --input-bg: #ffffff;
+      --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.2);
+      --logo-color: #f0fdf4;
+      --logo-bg-start: #16a34a;
+      --logo-bg-end: #15803d;
+    }
+
+    [data-theme="light"] .app-shell {
+      background: #ffffff !important;
     }
 
     * {
@@ -81,24 +106,14 @@
     .app-header {
       border-radius: 24px;
       padding: 16px 18px 14px;
-      background: radial-gradient(circle at 0 0, #22c55e22 0, transparent 55%),
-        radial-gradient(circle at 100% 0, #3b82f622 0, transparent 60%),
-        #020617;
-      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: var(--card-bg);
+      border: 1px solid var(--border-soft);
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 18px;
       position: relative;
       overflow: hidden;
-    }
-
-    .app-header::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 0 120%, #22c55e11, transparent 65%);
-      pointer-events: none;
     }
 
     .app-title {
@@ -117,14 +132,15 @@
       width: 28px;
       height: 28px;
       border-radius: 999px;
-      background: radial-gradient(circle at 30% 25%, #bbf7d0, #16a34a 70%);
+      background: radial-gradient(circle at 30% 25%, var(--logo-bg-start), var(--logo-bg-end) 70%);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       font-size: 14px;
       font-weight: 700;
-      color: #022c22;
+      color: var(--logo-color);
       box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.7);
+      transition: all 0.3s ease;
     }
 
     .app-name {
@@ -147,9 +163,34 @@
       color: var(--text-soft);
     }
 
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-soft);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      z-index: 1000;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .theme-toggle:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      transform: scale(1.05);
+    }
+
     /* Card */
     .card {
-      background: radial-gradient(circle at top, #020617, #020617 70%);
+      background: var(--card-bg);
       border-radius: var(--radius-xl);
       border: 1px solid var(--border-soft);
       padding: 18px 16px 16px;
@@ -181,8 +222,8 @@
       font-size: 10px;
       padding: 3px 8px;
       border-radius: 999px;
-      border: 1px solid #374151;
-      background: #020617;
+      border: 1px solid var(--border-soft);
+      background: var(--card-bg);
       color: var(--text-soft);
     }
 
@@ -288,13 +329,6 @@
 </head>
 <body>
   <div class="app-shell">
-    <!-- Fake status bar -->
-    <div class="status-strip">
-      <span>12:00</span>
-      <span>KAWACH YATRI</span>
-      <span>📶 4G 🔋</span>
-    </div>
-
     <!-- Header / Logo -->
     <div class="app-header">
       <div class="app-title">
@@ -306,7 +340,10 @@
           </div>
         </div>
       </div>
-      <div class="badge-gov">Govt. Pilot App</div>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" style="position: relative; top: auto; right: auto; margin-left: auto;">
+        <span id="theme-icon">🌙</span>
+        <span id="theme-text">Dark</span>
+      </button>
     </div>
 
     <!-- LOGIN CARD -->
@@ -404,5 +441,43 @@
       <span>Best viewed on mobile screen size.</span>
     </div>
   </div>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      updateThemeUI(newTheme);
+    }
+
+    function updateThemeUI(theme) {
+      const icon = document.getElementById('theme-icon');
+      const text = document.getElementById('theme-text');
+      
+      if (theme === 'light') {
+        icon.textContent = '☀️';
+        text.textContent = 'Light';
+      } else {
+        icon.textContent = '🌙';
+        text.textContent = 'Dark';
+      }
+    }
+
+    // Load saved theme on page load
+    (function() {
+      let savedTheme = localStorage.getItem('theme');
+      if (!savedTheme) {
+        // For mobile screens, default to light theme; for desktop, default to dark
+        const isMobile = window.innerWidth <= 768;
+        savedTheme = isMobile ? 'light' : 'dark';
+      }
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      updateThemeUI(savedTheme);
+    })();
+  </script>
 </body>
 </html>
