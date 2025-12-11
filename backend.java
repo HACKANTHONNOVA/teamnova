@@ -76,14 +76,14 @@ public class backend {
 		@Override
 		public void handle(HttpExchange exchange) throws IOException {
 			if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-				String sosData = new String(exchange.getRequestBody().readAllBytes());
+				String sosData = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
 				System.out.println("[SOS ALERT] " + sosData);
 				
 				String response = "{\"status\":\"SOS received\",\"message\":\"Emergency alert sent successfully\"}";
-				exchange.getResponseHeaders().add("Content-Type", "application/json");
-				exchange.sendResponseHeaders(200, response.length());
+				exchange.getResponseHeaders().add("Content-Type", "application/json; charset=UTF-8");
+				exchange.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
 				try (OutputStream os = exchange.getResponseBody()) {
-					os.write(response.getBytes());
+					os.write(response.getBytes(StandardCharsets.UTF_8));
 				}
 			} else {
 				exchange.sendResponseHeaders(405, -1);
