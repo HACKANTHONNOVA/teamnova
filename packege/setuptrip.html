@@ -82,6 +82,30 @@
         box-shadow: var(--shadow-soft);
         background: radial-gradient(circle at top, #020617, #020617 65%);
       }
+
+      #startingLocationField > div {
+        flex-direction: row !important;
+      }
+
+      #startingLocationField button {
+        flex: 0 0 auto !important;
+        width: auto !important;
+      }
+    }
+
+    @media (max-width: 479px) {
+      #startingLocationField > div {
+        flex-direction: column !important;
+      }
+
+      #startingLocationField button {
+        flex: 1 !important;
+        width: 100% !important;
+      }
+
+      #fromInput {
+        width: 100%;
+      }
     }
 
     /* Status bar */
@@ -481,10 +505,32 @@
         </p>
 
         <form class="form-grid" onsubmit="startTrip(event)">
-          <div class="field">
-            <label for="from">Starting location</label>
-            <input id="from" type="text" placeholder="e.g., Mysuru Palace" required />
+          <!-- START: replace old starting location block with this -->
+          <div class="field" id="startingLocationField">
+            <label for="fromInput">Starting location</label>
+
+            <!-- visible field (read-only) - full width -->
+            <input id="fromInput" type="text" placeholder="Tap 'Detect' to get current location" readonly style="width:100%; margin-bottom:8px;" />
+
+            <!-- buttons on next line -->
+            <div style="display:flex; gap:8px; width:100%;">
+              <!-- one-shot detect -->
+              <button type="button" id="btnDetectLocation" class="btn btn-ghost" style="flex:1;">
+                📍 Detect
+              </button>
+
+              <!-- start/stop live tracking -->
+              <button type="button" id="btnToggleTracking" class="btn btn-outline" style="flex:1;">
+                🔄 Start tracking
+              </button>
+            </div>
+
+            <div class="field-hint" id="locHint" style="margin-top:6px;">
+              Live: <span id="locStatus">not active</span>
+              <span style="margin-left:12px; color:var(--text-soft);">You can edit the value manually after detection.</span>
+            </div>
           </div>
+          <!-- END -->
 
           <div class="field">
             <label for="to">Destination / Area</label>
@@ -617,11 +663,93 @@
       }
     }
 
+    // Location detection
+    let trackingIntervalId = null;
+
+    function detectLocation() {
+      const fromInput = document.getElementById('fromInput');
+      if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser');
+        return;
+      }
+
+      fromInput.value = 'Detecting location...';
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude.toFixed(6);
+          const lon = position.coords.longitude.toFixed(6);
+          fromInput.value = `${lat}, ${lon}`;
+          fromInput.removeAttribute('readonly');
+        },
+        (error) => {
+          fromInput.value = '';
+          alert('Unable to retrieve location: ' + error.message);
+        }
+      );
+    }
+
+    function toggleTracking() {
+      const btnToggle = document.getElementById('btnToggleTracking');
+      const locStatus = document.getElementById('locStatus');
+      const fromInput = document.getElementById('fromInput');
+
+      if (trackingIntervalId) {
+        // Stop tracking
+        clearInterval(trackingIntervalId);
+        trackingIntervalId = null;
+        btnToggle.textContent = '🔄 Start tracking';
+        locStatus.textContent = 'not active';
+        locStatus.style.color = '';
+      } else {
+        // Start tracking
+        if (!navigator.geolocation) {
+          alert('Geolocation is not supported by your browser');
+          return;
+        }
+
+        btnToggle.textContent = '⏸️ Stop tracking';
+        locStatus.textContent = 'active';
+        locStatus.style.color = '#22c55e';
+
+        // Update immediately
+        detectLocation();
+
+        // Update every 5 seconds
+        trackingIntervalId = setInterval(() => {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const lat = position.coords.latitude.toFixed(6);
+              const lon = position.coords.longitude.toFixed(6);
+              fromInput.value = `${lat}, ${lon}`;
+              fromInput.removeAttribute('readonly');
+            },
+            (error) => {
+              console.error('Tracking error:', error);
+            }
+          );
+        }, 5000);
+      }
+    }
+
+    // Wire up buttons
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnDetect = document.getElementById('btnDetectLocation');
+      const btnToggle = document.getElementById('btnToggleTracking');
+
+      if (btnDetect) {
+        btnDetect.addEventListener('click', detectLocation);
+      }
+
+      if (btnToggle) {
+        btnToggle.addEventListener('click', toggleTracking);
+      }
+    });
+
     function startTrip(event) {
       event.preventDefault();
 
       try {
-        const from = document.getElementById('from').value.trim();
+        const from = document.getElementById('fromInput').value.trim();
         const to = document.getElementById('to').value.trim();
         const radius = document.getElementById('radius').value;
         const startDate = document.getElementById('startDate').value;
