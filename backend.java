@@ -22,6 +22,7 @@ public class backend {
 		server.createContext("/login", new StaticFileHandler(BASE.resolve("login.html")));
 		server.createContext("/home", new StaticFileHandler(BASE.resolve("homePage.html")));
 		server.createContext("/trip-setup", new StaticFileHandler(BASE.resolve("setuptrip.html")));
+		server.createContext("/trip-progress", new StaticFileHandler(BASE.resolve("tripprogress.html")));
 		server.createContext("/quick-sos", new StaticFileHandler(BASE.resolve("quickSOS.html")));
 		server.createContext("/profile", new StaticFileHandler(BASE.resolve("profile.html")));
 		server.createContext("/api/sos", new SOSHandler());

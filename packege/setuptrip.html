@@ -659,36 +659,20 @@
           console.error('startTrip: could not save trip to localStorage', e);
         }
 
-        // Use a relative target (same folder) and attempt client-side navigation first
-        const target = 'tripprogress.html';
-        console.log('startTrip: checking target', target, 'current location:', location.href);
+        // Navigate to the /trip-progress server route (which serves tripprogress.html)
+        const target = '/trip-progress';
+        console.log('startTrip: navigating to server route', target);
 
-        // Give localStorage a moment to persist, then try navigating client-side.
-        // This is the primary action — many static hosts will serve the sibling file.
+        // Give localStorage a moment to persist, then navigate
         setTimeout(() => {
           try {
-            console.log('startTrip: navigating to', target);
-            location.assign(target);
+            console.log('startTrip: redirecting to', target);
+            window.location.href = target;
           } catch (e) {
-            console.warn('startTrip: navigation failed, will attempt fetch-check fallback', e);
-            // If immediate navigation fails, continue to fallback below
+            console.error('startTrip: navigation error', e);
+            alert('Error navigating to trip progress. Check console.');
           }
-        }, 120);
-
-        // Also do a lightweight fetch check as backup; if it indicates a redirect/failure,
-        // render an inline fallback so the user still sees trip progress.
-        fetch(target, { method: 'GET', credentials: 'same-origin' })
-          .then(response => {
-            const redirectedToLogin = response.redirected && response.url && response.url.includes('login');
-            if (redirectedToLogin || !response.ok) {
-              console.warn('startTrip: fetch-check detected redirect/failure; rendering inline', response.url, response.status);
-              renderInlineTripProgress(trip);
-            }
-          })
-          .catch(err => {
-            console.warn('startTrip: fetch-check network error, rendering inline fallback', err);
-            renderInlineTripProgress(trip);
-          });
+        }, 100);
 
       } catch (err) {
         console.error('startTrip: unexpected error', err);
@@ -749,7 +733,7 @@
         const sos = document.getElementById('inline-sos');
         if (sos) sos.addEventListener('click', () => alert('SOS triggered (demo) — contacting guardian & police'));
         const end = document.getElementById('inline-end');
-        if (end) end.addEventListener('click', () => { localStorage.removeItem('activeTrip'); location.href = '/packege/homePage.html'; });
+        if (end) end.addEventListener('click', () => { localStorage.removeItem('activeTrip'); window.location.href = '/home'; });
         const ext = document.getElementById('inline-extend');
         if (ext) ext.addEventListener('click', () => alert('Extend trip (demo) — open setup to modify end time'));
 

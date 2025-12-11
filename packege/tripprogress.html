@@ -570,8 +570,8 @@
         function endTrip() {
           if (!confirm('End this trip and turn off monitoring?')) return;
           try { localStorage.removeItem('activeTrip'); } catch (e) { console.warn(e); }
-          // Redirect to home page
-          window.location.href = 'homePage.html';
+          // Redirect to home page using server route
+          window.location.href = '/home';
         }
 
         // Wire up extend and sos buttons minimally
