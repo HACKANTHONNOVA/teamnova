@@ -618,6 +618,40 @@
       }
     }
 
+    // Date restrictions
+    function initDateRestrictions() {
+      const startDateInput = document.getElementById('startDate');
+      const endDateInput = document.getElementById('endDate');
+      
+      // Set minimum date for start date to today
+      const today = new Date().toISOString().split('T')[0];
+      startDateInput.setAttribute('min', today);
+      
+      // When start date changes, update end date minimum
+      startDateInput.addEventListener('change', function() {
+        const selectedStartDate = this.value;
+        if (selectedStartDate) {
+          endDateInput.setAttribute('min', selectedStartDate);
+          
+          // If end date is before start date, clear it
+          if (endDateInput.value && endDateInput.value < selectedStartDate) {
+            endDateInput.value = '';
+          }
+        }
+      });
+      
+      // Prevent selecting end date before start date
+      endDateInput.addEventListener('change', function() {
+        const startDate = startDateInput.value;
+        const endDate = this.value;
+        
+        if (startDate && endDate && endDate < startDate) {
+          alert('Trip end date cannot be before trip start date');
+          this.value = '';
+        }
+      });
+    }
+
     // Load saved theme on page load
     (function() {
       let savedTheme = localStorage.getItem('theme');
@@ -628,6 +662,9 @@
       }
       document.documentElement.setAttribute('data-theme', savedTheme);
       updateThemeUI(savedTheme);
+      
+      // Initialize date restrictions
+      initDateRestrictions();
     })();
   </script>
 </body>
