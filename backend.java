@@ -2,7 +2,6 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -13,15 +12,20 @@ import java.nio.file.Paths;
 
 public class backend {
 	private static final Path BASE = Paths.get("packege");
+	private static final Path USER_DATA = BASE.resolve("userData.json");
 
 	public static void main(String[] args) throws IOException {
 		int port = 8080;
 		HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
 
-		server.createContext("/", exchange -> redirect(exchange, "/login"));
+		server.createContext("/", exchange -> redirect(exchange, "/profile"));
 		server.createContext("/login", new StaticFileHandler(BASE.resolve("login.html")));
 		server.createContext("/home", new StaticFileHandler(BASE.resolve("homePage.html")));
 		server.createContext("/trip-setup", new StaticFileHandler(BASE.resolve("setuptrip.html")));
+		server.createContext("/quick-sos", new StaticFileHandler(BASE.resolve("quickSOS.html")));
+		server.createContext("/profile", new StaticFileHandler(BASE.resolve("profile.html")));
+		server.createContext("/api/sos", new SOSHandler());
+		server.createContext("/api/user", new UserDataHandler());
 
 		server.setExecutor(null);
 		server.start();
@@ -63,6 +67,58 @@ public class backend {
 			try (OutputStream os = exchange.getResponseBody()) {
 				os.write(body);
 			}
+		}
+	}
+
+	private static class SOSHandler implements HttpHandler {
+		@Override
+		public void handle(HttpExchange exchange) throws IOException {
+			if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+				String sosData = new String(exchange.getRequestBody().readAllBytes());
+				System.out.println("[SOS ALERT] " + sosData);
+				
+				String response = "{\"status\":\"SOS received\",\"message\":\"Emergency alert sent successfully\"}";
+				exchange.getResponseHeaders().add("Content-Type", "application/json");
+				exchange.sendResponseHeaders(200, response.length());
+				try (OutputStream os = exchange.getResponseBody()) {
+					os.write(response.getBytes());
+				}
+			} else {
+				exchange.sendResponseHeaders(405, -1);
+			}
+			exchange.close();
+		}
+	}
+
+	private static class UserDataHandler implements HttpHandler {
+		@Override
+		public void handle(HttpExchange exchange) throws IOException {
+			Headers headers = exchange.getResponseHeaders();
+			headers.add("Content-Type", "application/json; charset=UTF-8");
+
+			if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+				byte[] body = Files.readAllBytes(USER_DATA);
+				exchange.sendResponseHeaders(200, body.length);
+				try (OutputStream os = exchange.getResponseBody()) {
+					os.write(body);
+				}
+				exchange.close();
+				return;
+			}
+
+			if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+				byte[] body = exchange.getRequestBody().readAllBytes();
+				Files.writeString(USER_DATA, new String(body, StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+				exchange.sendResponseHeaders(200, body.length);
+				try (OutputStream os = exchange.getResponseBody()) {
+					os.write(body);
+				}
+				exchange.close();
+				return;
+			}
+
+			exchange.sendResponseHeaders(405, -1);
+			exchange.close();
 		}
 	}
 }

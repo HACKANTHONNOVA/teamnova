@@ -118,6 +118,16 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      border: none;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .header-left:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+      border-radius: 12px;
     }
 
     .logo-dot {
@@ -145,6 +155,11 @@
       font-size: 14px;
       font-weight: 600;
       letter-spacing: 0.03em;
+      color: #ffffff;
+    }
+
+    [data-theme="light"] .app-name {
+      color: #000000;
     }
 
     .app-subtitle {
@@ -386,16 +401,18 @@
   <div class="app-shell">
     <!-- Header -->
     <header class="app-header">
-      <div class="header-left">
+      <button class="header-left" type="button" onclick="location.href='/profile'" aria-label="Go to profile">
         <div class="logo-dot">KY</div>
         <div class="app-title-block">
           <div class="app-name">KawachYatri</div>
           <div class="app-subtitle">Smart Tourist Safety & SOS</div>
         </div>
-      </div>
+      </button>
       <div class="header-right">
         <!-- You can fill this dynamically via backend / JS -->
-        <div class="user-id-pill">ID: STSM-USER-001</div>
+        <a href="/profile" aria-label="View profile" style="text-decoration: none;">
+          <div class="user-id-pill">ID: STSM-USER-001</div>
+        </a>
         <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" style="position: relative; top: auto; right: auto; margin-left: 0;">
           <span id="theme-icon">🌙</span>
           <span id="theme-text">Dark</span>
@@ -436,14 +453,16 @@
           <!-- Link this to your trip setup page -->
           <a href="/trip-setup">
             <button class="btn btn-primary" type="button">
-              🧳 Start Trip Setup
+            🧳 Start Trip Setup
             </button>
           </a>
 
           <!-- Quick SOS without trip (still front-end only) -->
-          <button class="btn btn-outline" type="button">
-            🆘 Quick SOS (without trip)
-          </button>
+          <a href="/quick-sos">
+            <button class="btn btn-outline" type="button">
+              🆘 Quick SOS (without trip)
+            </button>
+          </a>
         </div>
       </div>
 

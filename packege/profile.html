@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Profile & History — Mobile</title>
+<style>
+  :root{
+    --dark-bg: #0f172a;
+    --dark-card: #020617;
+    --dark-text: #e5e7eb;
+    --accent: #16a34a;
+    --muted: rgba(229,231,235,0.7);
+
+    --light-bg: #f8fafc;
+    --light-card: #ffffff;
+    --light-text: #111827;
+    --light-muted: #6b7280;
+  }
+
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,sans-serif;-webkit-font-smoothing:antialiased;}
+  body{display:flex;justify-content:center;background:var(--dark-bg);color:var(--dark-text);transition:background .22s,color .22s;}
+
+  /* App phone-like container */
+  .app {
+    width:100%;
+    max-width:420px;
+    height:100vh;
+    padding:14px;
+    box-sizing:border-box;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    background:linear-gradient(180deg,var(--dark-card), #020617 60%);
+  }
+
+  /* Topbar */
+  .topbar { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .title { display:flex; flex-direction:column; gap:2px; }
+  .title h1 { margin:0; font-size:18px; font-weight:700; }
+  .title p { margin:0; font-size:12px; color:var(--muted); }
+
+  /* Profile round button */
+  .profile-btn {
+    width:46px; height:46px; border-radius:50%;
+    border:2px solid rgba(255,255,255,0.08);
+    background:linear-gradient(180deg,#11182722,#00000011);
+    display:inline-flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden;
+  }
+  .profile-initials {
+    width:38px; height:38px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; background:linear-gradient(180deg,#bbf7d0,#16a34a); color:#022c22; font-size:13px;
+  }
+
+  /* Theme toggle */
+  .controls { display:flex; align-items:center; gap:8px; }
+  .theme-toggle {
+    padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,0.06);
+    background:transparent; cursor:pointer; color:inherit; font-size:13px;
+  }
+
+  /* Content area (profile summary + optional quick info) */
+  .content {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    overflow:auto;
+  }
+
+  .card {
+    border-radius:14px;
+    padding:12px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    border:1px solid rgba(255,255,255,0.03);
+  }
+
+  .card h2 { margin:0 0 6px 0; font-size:14px; }
+  .muted { color:var(--muted); font-size:13px; }
+
+  /* Profile Drawer (slide-over) */
+  .drawer {
+    position:fixed;
+    left:50%;
+    transform:translateX(-50%);
+    width:calc(100% - 28px);
+    max-width:420px;
+    top:-120%;
+    transition:top .28s cubic-bezier(.2,.9,.2,1);
+    z-index:70;
+    box-shadow:0 30px 80px rgba(2,6,23,0.6);
+  }
+  .drawer.open { top:44px; }
+
+  .panel {
+    border-radius:14px;
+    padding:14px;
+    background:linear-gradient(180deg,var(--dark-card),#020617 80%);
+    border:1px solid rgba(255,255,255,0.04);
+    color:var(--dark-text);
+  }
+
+  .profile-header { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  .avatar { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; background:linear-gradient(180deg,#bbf7d0,#16a34a); color:#022c22; font-size:18px; }
+  .meta { display:flex; flex-direction:column; gap:2px; }
+  .meta .name { font-weight:700; font-size:16px; }
+  .meta .sub { font-size:12px; color:var(--muted); }
+
+  .label { font-size:12px; color:var(--muted); margin-bottom:6px; }
+  .input { width:100%; padding:9px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit; font-size:14px; box-sizing:border-box; }
+
+  .history { margin-top:10px; display:flex; flex-direction:column; gap:8px; max-height:220px; overflow:auto; padding-right:6px; }
+  .trip { padding:10px; border-radius:10px; background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent); border:1px solid rgba(255,255,255,0.02); display:flex; justify-content:space-between; gap:8px; }
+  .trip .route { font-weight:600; font-size:14px; }
+  .trip .date { font-size:12px; color:var(--muted); align-self:center; }
+
+  .row { display:flex; gap:8px; }
+  .actions { display:flex; gap:8px; margin-top:12px; }
+  .btn { flex:1; padding:10px; border-radius:10px; border:none; font-weight:700; cursor:pointer; }
+  .btn.primary { background:linear-gradient(90deg,#bbf7d0,#16a34a); color:#022c22; }
+  .btn.ghost { background:transparent; border:1px solid rgba(255,255,255,0.06); color:inherit; }
+
+  /* Light theme */
+  body[data-theme="light"] { background:var(--light-bg); color:var(--light-text); }
+  body[data-theme="light"] .app { background:var(--light-bg); }
+  body[data-theme="light"] .panel { background:var(--light-card); color:var(--light-text); border-color:#e6eef7; }
+  body[data-theme="light"] .muted { color:var(--light-muted); }
+  body[data-theme="light"] .profile-initials { box-shadow:none; }
+  body[data-theme="light"] .title p { color:#6b7280; }
+
+  @media (max-height:640px){ .drawer.open{ top:34px; } }
+</style>
+</head>
+<body data-theme="dark">
+
+<div class="app" role="application" aria-label="Profile mobile view">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="title">
+      <h1 id="headerUserName">Your Name</h1>
+      <p id="headerSubtitle">Profile & History</p>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="controls">
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙 Dark</button>
+      </div>
+
+      <button id="profileBtn" class="profile-btn" aria-haspopup="true" aria-expanded="false" title="Open profile">
+        <div id="profileInitials" class="profile-initials">U</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main content (no SOS) -->
+  <div class="content">
+    <div class="card">
+      <h2>Welcome</h2>
+      <div class="muted">Tap the round profile button at the top-right to view or edit your profile and travel history.</div>
+    </div>
+
+    <div class="card">
+      <h2>Recent trips</h2>
+      <div id="homeHistory" class="history">
+        <!-- injected list -->
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Profile drawer -->
+<div id="drawer" class="drawer" aria-hidden="true">
+  <div class="panel" role="dialog" aria-modal="true" aria-label="Profile panel">
+    <div class="profile-header">
+      <div id="panelAvatar" class="avatar">U</div>
+      <div class="meta">
+        <div id="panelName" class="name">User</div>
+        <div class="sub">Manage your personal details</div>
+      </div>
+      <div style="margin-left:auto;">
+        <button id="editToggle" class="btn ghost" style="padding:6px 10px;min-width:72px;">Edit</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="label">Full name</div>
+      <input id="inputName" class="input" readonly />
+    </div>
+
+    <div style="margin-top:10px;">
+      <div class="row">
+        <div style="flex:1;">
+          <div class="label">Phone number</div>
+          <input id="inputPhone" class="input" readonly />
+        </div>
+        <div style="width:10px"></div>
+        <div style="flex:1;">
+          <div class="label">Guardian / Parent</div>
+          <input id="inputGuardian" class="input" readonly />
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-weight:700">Travel history</div>
+        <div style="font-size:12px;color:var(--muted)">Recent trips</div>
+      </div>
+
+      <div id="historyList" class="history" aria-live="polite"></div>
+    </div>
+
+    <div class="actions">
+      <button id="closeBtn" class="btn ghost">Close</button>
+      <button id="saveBtn" class="btn primary" style="display:none">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- small toast -->
+<div id="toast" style="position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:#fff;padding:8px 12px;border-radius:8px;display:none;z-index:90;"></div>
+
+<script>
+  const STORAGE_KEY = "profile_history_v1";
+  const THEME_KEY = "profile_theme_v1";
+
+  // default data
+  const defaultData = {
+    name: "Rahul G",
+    phone: "9876543210",
+    guardian: "9123456780",
+    history: [
+      { date: "2025-12-09", route: "Mysuru → Chamundi Hills" },
+      { date: "2025-11-22", route: "Bengaluru → Nandi Hills" }
+    ]
+  };
+
+  // elements
+  const profileBtn = document.getElementById("profileBtn");
+  const drawer = document.getElementById("drawer");
+  const editToggle = document.getElementById("editToggle");
+  const inputName = document.getElementById("inputName");
+  const inputPhone = document.getElementById("inputPhone");
+  const inputGuardian = document.getElementById("inputGuardian");
+  const saveBtn = document.getElementById("saveBtn");
+  const closeBtn = document.getElementById("closeBtn");
+  const historyList = document.getElementById("historyList");
+  const homeHistory = document.getElementById("homeHistory");
+  const profileInitials = document.getElementById("profileInitials");
+  const panelAvatar = document.getElementById("panelAvatar");
+  const panelName = document.getElementById("panelName");
+  const headerUserName = document.getElementById("headerUserName");
+  const themeToggle = document.getElementById("themeToggle");
+  const toast = document.getElementById("toast");
+
+  // load / save
+  function loadData(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : defaultData;
+  }
+  function saveData(data){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function initials(name){
+    return (name || "").split(/\s+/).map(s=>s[0]||"").slice(0,2).join("").toUpperCase() || "U";
+  }
+
+  let data = loadData();
+
+  // render drawer & homepage history
+  function renderAll(){
+    // header name
+    headerUserName.textContent = data.name || "User";
+    profileInitials.textContent = initials(data.name);
+    panelAvatar.textContent = initials(data.name);
+    panelName.textContent = data.name || "User";
+
+    // inputs
+    inputName.value = data.name || "";
+    inputPhone.value = data.phone || "";
+    inputGuardian.value = data.guardian || "";
+
+    // drawer history
+    historyList.innerHTML = "";
+    if (!Array.isArray(data.history) || data.history.length === 0){
+      const d = document.createElement("div");
+      d.className = "muted";
+      d.textContent = "No travel history.";
+      historyList.appendChild(d);
+    } else {
+      data.history.slice().reverse().forEach(entry => {
+        const el = document.createElement("div");
+        el.className = "trip";
+        el.innerHTML = `<div><div class="route">${entry.route}</div><div class="date">${entry.date}</div></div><div class="date">${entry.time || ""}</div>`;
+        historyList.appendChild(el);
+      });
+    }
+
+    // home recent trips summary
+    homeHistory.innerHTML = "";
+    (data.history || []).slice(-3).reverse().forEach(entry => {
+      const el = document.createElement("div");
+      el.className = "trip";
+      el.innerHTML = `<div><div class="route">${entry.route}</div><div class="date">${entry.date}</div></div><div class="date">${entry.time || ""}</div>`;
+      homeHistory.appendChild(el);
+    });
+    if ((data.history || []).length === 0){
+      const d = document.createElement("div");
+      d.className = "muted";
+      d.textContent = "No recent trips.";
+      homeHistory.appendChild(d);
+    }
+  }
+
+  // drawer controls
+  let open = false;
+  function openDrawer(){ drawer.classList.add("open"); drawer.setAttribute("aria-hidden","false"); profileBtn.setAttribute("aria-expanded","true"); open = true; }
+  function closeDrawer(){ drawer.classList.remove("open"); drawer.setAttribute("aria-hidden","true"); profileBtn.setAttribute("aria-expanded","false"); open = false; setEditing(false); }
+
+  profileBtn.addEventListener("click", ()=> open ? closeDrawer() : openDrawer());
+  closeBtn.addEventListener("click", closeDrawer);
+
+  // edit mode
+  let editing = false;
+  function setEditing(flag){
+    editing = !!flag;
+    inputName.readOnly = !editing;
+    inputPhone.readOnly = !editing;
+    inputGuardian.readOnly = !editing;
+    saveBtn.style.display = editing ? "inline-block" : "none";
+    editToggle.textContent = editing ? "Cancel" : "Edit";
+    if (editing) inputName.focus();
+    else {
+      // revert if canceled
+      inputName.value = data.name;
+      inputPhone.value = data.phone;
+      inputGuardian.value = data.guardian;
+    }
+  }
+  editToggle.addEventListener("click", ()=> setEditing(!editing));
+
+  // save profile
+  saveBtn.addEventListener("click", ()=>{
+    const name = inputName.value.trim() || "Unnamed";
+    const phone = inputPhone.value.trim();
+    const guardian = inputGuardian.value.trim();
+
+    if (phone && !/^\d{10}$/.test(phone)){ showToast("Phone must be 10 digits"); return; }
+    if (guardian && !/^\d{10}$/.test(guardian)){ showToast("Guardian must be 10 digits"); return; }
+
+    data.name = name;
+    data.phone = phone;
+    data.guardian = guardian;
+    data.initials = initials(name);
+    saveData(data);
+    renderAll();
+    setEditing(false);
+    showToast("Profile saved");
+  });
+
+  // theme persistence
+  function loadTheme(){
+    const t = localStorage.getItem(THEME_KEY) || "dark";
+    applyTheme(t);
+  }
+  function applyTheme(theme){
+    document.body.setAttribute("data-theme", theme);
+    themeToggle.textContent = theme === "dark" ? "🌙 Dark" : "☀️ Light";
+    if (theme === "dark") document.querySelector(".app").style.background = "linear-gradient(180deg,var(--dark-card), #020617 60%)";
+    else document.querySelector(".app").style.background = "var(--light-bg)";
+    localStorage.setItem(THEME_KEY, theme);
+  }
+  themeToggle.addEventListener("click", ()=>{
+    const next = document.body.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    applyTheme(next);
+  });
+
+  // toast
+  let timer = null;
+  function showToast(msg, ms=1600){
+    clearTimeout(timer);
+    toast.style.display = "block";
+    toast.textContent = msg;
+    timer = setTimeout(()=> toast.style.display = "none", ms);
+  }
+
+  // initialize
+  renderAll();
+  loadTheme();
+
+  // close drawer on outside click
+  document.addEventListener("click", (ev)=>{
+    if (!open) return;
+    const inside = drawer.contains(ev.target) || profileBtn.contains(ev.target);
+    if (!inside) closeDrawer();
+  });
+
+  // keyboard escape
+  document.addEventListener("keydown", (e)=> { if (e.key === "Escape" && open) closeDrawer(); });
+
+  // expose small API to add history (optional)
+  window.ProfileHistory = {
+    addTrip: (route, date, time) => {
+      data.history = data.history || [];
+      data.history.push({ route, date: date || new Date().toISOString().slice(0,10), time: time || "" });
+      saveData(data);
+      renderAll();
+    }
+  };
+</script>
+</body>
+</html>
