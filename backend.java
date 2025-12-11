@@ -21,6 +21,7 @@ public class backend {
 		server.createContext("/", exchange -> redirect(exchange, "/login"));
 		server.createContext("/login", new StaticFileHandler(BASE.resolve("login.html")));
 		server.createContext("/home", new StaticFileHandler(BASE.resolve("homePage.html")));
+		server.createContext("/trip-setup", new StaticFileHandler(BASE.resolve("setuptrip.html")));
 
 		server.setExecutor(null);
 		server.start();
