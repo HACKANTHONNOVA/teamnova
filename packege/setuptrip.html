@@ -196,6 +196,9 @@
       letter-spacing: 0.03em;
     }
 
+    /* Ensure user name is white in dark theme */
+    [data-theme="dark"] .app-name { color: #ffffff; }
+
     .app-subtitle {
       font-size: 11px;
       color: var(--text-soft);
@@ -572,7 +575,10 @@
 
           <div class="field">
             <label for="radius">Safe zone radius (km)</label>
-            <input id="radius" type="number" min="1" max="50" value="5" />
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input id="radius" type="number" min="1" max="50" value="5" style="flex:1;" />
+              <button type="button" class="btn btn-outline" style="flex:0 0 auto; width:auto;" onclick="openRadiusPicker()">📍 Google Maps Picker</button>
+            </div>
             <div class="field-hint">
               If you cross this radius, a geo-fence alert will be raised.
             </div>
@@ -785,6 +791,23 @@
       }
     }
 
+    function promptForSafetyPin() {
+      const pin = prompt('Enter your 4-digit safety PIN to end the trip');
+      if (pin === null) return null; // user cancelled
+      const trimmed = pin.trim();
+      if (!/^\d{4}$/.test(trimmed)) {
+        alert('PIN must be exactly 4 digits.');
+        return null;
+      }
+
+      const savedPin = localStorage.getItem('safetyPin');
+      if (savedPin && savedPin !== trimmed) {
+        alert('Incorrect safety PIN.');
+        return null;
+      }
+      return trimmed;
+    }
+
     // Wire up buttons
     document.addEventListener('DOMContentLoaded', () => {
       const btnDetect = document.getElementById('btnDetectLocation');
@@ -896,7 +919,10 @@
                 <div class="trip-mini-row"><span class="trip-mini-label">From → To</span><span class="trip-mini-value">${trip.from} → ${trip.to}</span></div>
                 <div class="trip-mini-row"><span class="trip-mini-label">Safe zone radius</span><span class="trip-mini-value">${trip.radius ? trip.radius + ' km around route' : '—'}</span></div>
                 <div class="trip-mini-row"><span class="trip-mini-label">Travellers / Mode</span><span class="trip-mini-value">${trip.travellers || 1} · ${trip.mode || '—'}</span></div>
-                <div class="trip-mini-row" style="margin-top:6px; color:var(--text-soft);">Notes: ${trip.notes ? trip.notes : '—'}</div>
+                <div class="trip-mini-row" style="margin-top:6px; color:var(--text-soft);">
+                  <span class="trip-mini-label">Trip duration</span>
+                  <span class="trip-mini-value">${(trip.start || '—')} → ${(trip.end || '—')}</span>
+                </div>
               </div>
 
               <div class="btn-row" style="margin-top:12px;">
@@ -914,7 +940,13 @@
         const sos = document.getElementById('inline-sos');
         if (sos) sos.addEventListener('click', () => alert('SOS triggered (demo) — contacting guardian & police'));
         const end = document.getElementById('inline-end');
-        if (end) end.addEventListener('click', () => { localStorage.removeItem('activeTrip'); window.location.href = '/home'; });
+        if (end) end.addEventListener('click', () => {
+          const pin = promptForSafetyPin();
+          if (!pin) return;
+          if (!confirm('End this trip and turn off monitoring?')) return;
+          localStorage.removeItem('activeTrip');
+          window.location.href = '/home';
+        });
         const ext = document.getElementById('inline-extend');
         if (ext) ext.addEventListener('click', () => alert('Extend trip (demo) — open setup to modify end time'));
 
@@ -1064,6 +1096,210 @@
       // Initialize date restrictions
       initDateRestrictions();
     })();
+
+    // Google Maps API key management
+    let GOOGLE_MAPS_API_KEY = localStorage.getItem('gmaps_api_key') || '';
+
+    function ensureGoogleMapsKey(cb) {
+      if (GOOGLE_MAPS_API_KEY && !GOOGLE_MAPS_API_KEY.includes('AIza')) {
+        // Key looks wrong; prompt again
+        GOOGLE_MAPS_API_KEY = '';
+      }
+      if (!GOOGLE_MAPS_API_KEY) {
+        const key = prompt('Enter your Google Maps API key (public key with Maps JavaScript API enabled):');
+        if (key && key.trim()) {
+          GOOGLE_MAPS_API_KEY = key.trim();
+          localStorage.setItem('gmaps_api_key', GOOGLE_MAPS_API_KEY);
+        } else {
+          alert('Google Maps API key required.');
+          cb(new Error('missing-key'));
+          return;
+        }
+      }
+      cb();
+    }
+
+    function ensureMapsScriptLoaded(cb) {
+      if (window.google && window.google.maps) { cb(); return; }
+      ensureGoogleMapsKey(() => {
+        const existing = document.getElementById('gmaps-sdk');
+        if (existing) { existing.addEventListener('load', cb); return; }
+        const s = document.createElement('script');
+        s.id = 'gmaps-sdk';
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}&libraries=places`;
+        s.async = true;
+        s.onload = cb;
+        s.onerror = () => {
+          console.error('Google Maps failed to load.');
+          alert('Failed to load Google Maps. Check your API key.');
+          cb(new Error('gmaps-load-error'));
+        };
+        document.head.appendChild(s);
+      });
+    }
+
+    let gmMap, gmMarker, gmCircle;
+
+    function openRadiusPicker() {
+      ensureMapsScriptLoaded((err) => {
+        if (err) {
+          alert('Cannot load maps. Enter a valid Google Maps API key.');
+          return;
+        }
+
+        let existingModal = document.getElementById('radiusPickerModal');
+        if (existingModal) existingModal.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'radiusPickerModal';
+        modal.style.cssText = `
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+          background: rgba(0,0,0,0.5); display: flex; align-items: center; 
+          justify-content: center; z-index: 9999;
+        `;
+
+        const container = document.createElement('div');
+        container.style.cssText = `
+          background: white; border-radius: 12px; width: 90%; max-width: 500px;
+          max-height: 85vh; display: flex; flex-direction: column; overflow: hidden;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        `;
+
+        const header = document.createElement('div');
+        header.style.cssText = 'padding: 16px; border-bottom: 1px solid #ddd; font-weight: bold;';
+        header.innerHTML = 'Pick Safe Zone on Google Maps (drag marker to select center)';
+
+        const mapDiv = document.createElement('div');
+        mapDiv.id = 'gm-map';
+        mapDiv.style.cssText = 'flex: 1; min-height: 300px; position: relative;';
+
+        const controlsDiv = document.createElement('div');
+        controlsDiv.style.cssText = 'padding: 16px; border-top: 1px solid #ddd; display: flex; flex-direction: column; gap: 12px;';
+
+        const radiusLabel = document.createElement('label');
+        radiusLabel.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 14px;';
+        radiusLabel.innerHTML = `
+          Radius: <input type="range" id="gm-radius-slider" min="1" max="50" value="5" 
+                         style="flex:1; cursor:pointer;"> 
+          <span id="gm-radius-value" style="min-width: 40px; font-weight: bold;">5 km</span>
+        `;
+
+        const centerLabel = document.createElement('label');
+        centerLabel.style.cssText = 'font-size: 13px; color: #666;';
+        centerLabel.innerHTML = `Center: <span id="gm-center-display" style="font-weight: bold; color: #333;">Loading...</span>`;
+
+        const buttons = document.createElement('div');
+        buttons.style.cssText = 'display: flex; gap: 8px;';
+        const applyBtn = document.createElement('button');
+        applyBtn.innerHTML = '✓ Apply';
+        applyBtn.style.cssText = `
+          flex: 1; padding: 10px; background: #4CAF50; color: white; border: none;
+          border-radius: 6px; cursor: pointer; font-weight: bold;
+        `;
+        applyBtn.onclick = () => { applyPickedRadius(); modal.remove(); };
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.innerHTML = '✕ Cancel';
+        cancelBtn.style.cssText = `
+          flex: 1; padding: 10px; background: #999; color: white; border: none;
+          border-radius: 6px; cursor: pointer; font-weight: bold;
+        `;
+        cancelBtn.onclick = () => modal.remove();
+
+        buttons.appendChild(applyBtn);
+        buttons.appendChild(cancelBtn);
+
+        controlsDiv.appendChild(radiusLabel);
+        controlsDiv.appendChild(centerLabel);
+        controlsDiv.appendChild(buttons);
+
+        container.appendChild(header);
+        container.appendChild(mapDiv);
+        container.appendChild(controlsDiv);
+        modal.appendChild(container);
+        document.body.appendChild(modal);
+
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) modal.remove();
+        });
+
+        setTimeout(() => {
+          const fromInput = document.getElementById('fromInput');
+          let defaultCenter = { lat: 12.9716, lng: 77.5946 };
+          
+          if (fromInput && fromInput.value && fromInput.value.includes(',')) {
+            const [lat, lng] = fromInput.value.split(',').map(s => parseFloat(s.trim()));
+            if (!isNaN(lat) && !isNaN(lng)) {
+              defaultCenter = { lat, lng };
+            }
+          }
+
+          gmMap = new google.maps.Map(mapDiv, {
+            zoom: 13,
+            center: defaultCenter,
+            mapTypeControl: false,
+            fullscreenControl: false,
+          });
+
+          gmMarker = new google.maps.Marker({
+            position: defaultCenter,
+            map: gmMap,
+            draggable: true,
+            title: 'Drag to select center'
+          });
+
+          const radiusKm = parseInt(document.getElementById('gm-radius-slider').value);
+          gmCircle = new google.maps.Circle({
+            center: defaultCenter,
+            radius: radiusKm * 1000,
+            map: gmMap,
+            fillColor: '#4CAF50',
+            fillOpacity: 0.2,
+            strokeColor: '#4CAF50',
+            strokeOpacity: 0.8,
+            strokeWeight: 2
+          });
+
+          function updateDisplay() {
+            const pos = gmMarker.getPosition();
+            document.getElementById('gm-center-display').textContent = 
+              `${pos.lat().toFixed(4)}, ${pos.lng().toFixed(4)}`;
+            gmCircle.setCenter(pos);
+          }
+
+          gmMarker.addListener('drag', updateDisplay);
+          gmMarker.addListener('dragend', updateDisplay);
+
+          document.getElementById('gm-radius-slider').addEventListener('change', (e) => {
+            const km = parseInt(e.target.value);
+            document.getElementById('gm-radius-value').textContent = km + ' km';
+            gmCircle.setRadius(km * 1000);
+          });
+
+          document.getElementById('gm-radius-slider').addEventListener('input', (e) => {
+            const km = parseInt(e.target.value);
+            document.getElementById('gm-radius-value').textContent = km + ' km';
+            gmCircle.setRadius(km * 1000);
+          });
+
+          updateDisplay();
+        }, 100);
+      });
+    }
+
+    function applyPickedRadius() {
+      const km = Number(document.getElementById('gm-radius-slider').value) || 5;
+      const pos = gmMarker.getPosition();
+      const lat = pos.lat();
+      const lng = pos.lng();
+      const radiusInput = document.getElementById('radius');
+      radiusInput.value = String(km);
+      const fromInput = document.getElementById('fromInput');
+      fromInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      const modal = document.getElementById('radiusPickerModal');
+      if (modal) modal.remove();
+      showToast('Safe zone updated from map.');
+    }
 
     // Load and display profile data in header
     (function() {

@@ -46,7 +46,8 @@
     }
 
     [data-theme="light"] body {
-        background: var(--bg-light);
+        /* Keep outer background dark; only the mobile shell turns light */
+        background: radial-gradient(circle at top, var(--bg-grad-dark-1), var(--bg-grad-dark-2) 60%);
         color: var(--text-light);
     }
 
@@ -128,6 +129,11 @@
         font-size: 13px;
         font-weight: 600;
         letter-spacing: 0.03em;
+    }
+
+    /* Ensure name is white in dark theme */
+    [data-theme="dark"] .header-title {
+        color: #ffffff;
     }
 
     .header-right {
@@ -324,13 +330,14 @@
     const themeToggle = document.querySelector(".theme-toggle");
 
     function applyTheme(theme) {
+        const bgGradient = "radial-gradient(circle at top, #0f172a, #020617 60%)";
+        document.body.style.background = bgGradient; // keep outer background dark on both themes
+
         if (theme === "dark") {
-            document.body.style.background = "radial-gradient(circle at top, #0f172a, #020617 60%)";
             document.body.style.color = "#e5e7eb";
             document.getElementById("sosButton").style.background = "radial-gradient(circle at 30% 0, #fee2e2, #b91c1c 70%)";
             document.getElementById("theme-icon").textContent = "🌙 Dark";
         } else {
-            document.body.style.background = "#ffffff";
             document.body.style.color = "#000000";
             document.getElementById("sosButton").style.background = "radial-gradient(circle at 30% 0, #fecaca, #dc2626 70%)";
             document.getElementById("theme-icon").textContent = "☀️ Light";
@@ -362,6 +369,26 @@
         }
         document.body.setAttribute("data-theme", savedTheme);
         applyTheme(savedTheme);
+    })();
+
+    // Load user profile and connect header name
+    (function() {
+        try {
+            const profile = JSON.parse(localStorage.getItem('profile_history_v1')) || { name: 'Traveller', history: [] };
+            const titleEl = document.querySelector('.header-title');
+            if (titleEl) {
+                titleEl.textContent = profile.name || 'Traveller';
+            }
+            const logoEl = document.querySelector('.logo-icon');
+            if (logoEl) {
+                const initial = (profile.name && profile.name.trim().charAt(0).toUpperCase()) || 'U';
+                logoEl.textContent = initial;
+            }
+            // Optionally store history length for future use
+            window.__userHistoryCount = Array.isArray(profile.history) ? profile.history.length : 0;
+        } catch (e) {
+            // no-op
+        }
     })();
 
     function activateSOS() {

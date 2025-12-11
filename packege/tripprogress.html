@@ -649,7 +649,26 @@
           if (headerStatus) headerStatus.innerHTML = '<span class="status-dot"></span> Trip active · Geo-fence ON';
         }
 
+        function promptForSafetyPin() {
+          const pin = prompt('Enter your 4-digit safety PIN to end the trip');
+          if (pin === null) return null; // user cancelled
+          const trimmed = pin.trim();
+          if (!/^\d{4}$/.test(trimmed)) {
+            alert('PIN must be exactly 4 digits.');
+            return null;
+          }
+
+          const savedPin = localStorage.getItem('safetyPin');
+          if (savedPin && savedPin !== trimmed) {
+            alert('Incorrect safety PIN.');
+            return null;
+          }
+          return trimmed;
+        }
+
         function endTrip() {
+          const pin = promptForSafetyPin();
+          if (!pin) return;
           if (!confirm('End this trip and turn off monitoring?')) return;
           try { localStorage.removeItem('activeTrip'); } catch (e) { console.warn(e); }
           // Redirect to home page using server route
