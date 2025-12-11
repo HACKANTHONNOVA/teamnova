@@ -480,7 +480,7 @@
           geo-fencing and SOS routing will be enabled.
         </p>
 
-        <form class="form-grid">
+        <form class="form-grid" onsubmit="startTrip(event)">
           <div class="field">
             <label for="from">Starting location</label>
             <input id="from" type="text" placeholder="e.g., Mysuru Palace" required />
@@ -571,7 +571,7 @@
             </button>
 
             <!-- In real app, this would submit to backend -->
-            <button type="submit" class="btn btn-primary">
+            <button type="button" class="btn btn-primary" onclick="startTrip(event)">
               ✅ Start Trip & Enable Geo-fence
             </button>
 
@@ -613,6 +613,149 @@
       } else {
         icon.textContent = '🌙';
         text.textContent = 'Dark';
+      }
+    }
+
+    function startTrip(event) {
+      event.preventDefault();
+
+      try {
+        const from = document.getElementById('from').value.trim();
+        const to = document.getElementById('to').value.trim();
+        const radius = document.getElementById('radius').value;
+        const startDate = document.getElementById('startDate').value;
+        const startTime = document.getElementById('startTime').value;
+        const endDate = document.getElementById('endDate').value;
+        const endTime = document.getElementById('endTime').value;
+        const travellers = document.getElementById('travellers').value;
+        const mode = document.getElementById('mode').value;
+        const notes = document.getElementById('notes').value.trim();
+
+        console.log('startTrip: collected values', { from, to, radius, startDate, startTime, endDate, endTime, travellers, mode });
+
+        if (!from || !to || !startDate || !startTime || !endDate || !endTime) {
+          alert('Please fill in all required fields');
+          console.warn('startTrip: validation failed');
+          return;
+        }
+
+        const trip = {
+          from,
+          to,
+          radius: radius ? Number(radius) : null,
+          start: `${startDate} ${startTime}`,
+          end: `${endDate} ${endTime}`,
+          travellers: travellers ? Number(travellers) : 1,
+          mode,
+          notes,
+          status: 'active',
+          startedAt: new Date().toISOString()
+        };
+
+        try {
+          localStorage.setItem('activeTrip', JSON.stringify(trip));
+          console.log('startTrip: saved activeTrip to localStorage');
+        } catch (e) {
+          console.error('startTrip: could not save trip to localStorage', e);
+        }
+
+        // Use a relative target (same folder) and attempt client-side navigation first
+        const target = 'tripprogress.html';
+        console.log('startTrip: checking target', target, 'current location:', location.href);
+
+        // Give localStorage a moment to persist, then try navigating client-side.
+        // This is the primary action — many static hosts will serve the sibling file.
+        setTimeout(() => {
+          try {
+            console.log('startTrip: navigating to', target);
+            location.assign(target);
+          } catch (e) {
+            console.warn('startTrip: navigation failed, will attempt fetch-check fallback', e);
+            // If immediate navigation fails, continue to fallback below
+          }
+        }, 120);
+
+        // Also do a lightweight fetch check as backup; if it indicates a redirect/failure,
+        // render an inline fallback so the user still sees trip progress.
+        fetch(target, { method: 'GET', credentials: 'same-origin' })
+          .then(response => {
+            const redirectedToLogin = response.redirected && response.url && response.url.includes('login');
+            if (redirectedToLogin || !response.ok) {
+              console.warn('startTrip: fetch-check detected redirect/failure; rendering inline', response.url, response.status);
+              renderInlineTripProgress(trip);
+            }
+          })
+          .catch(err => {
+            console.warn('startTrip: fetch-check network error, rendering inline fallback', err);
+            renderInlineTripProgress(trip);
+          });
+
+      } catch (err) {
+        console.error('startTrip: unexpected error', err);
+        alert('An unexpected error occurred starting the trip. Check console for details.');
+      }
+    }
+
+    // If server-side routing prevents direct navigation, render a compact trip-progress UI inline
+    function renderInlineTripProgress(trip) {
+      try {
+        const shell = document.querySelector('.app-shell');
+        if (!shell) return;
+
+        shell.innerHTML = `
+          <header class="app-header">
+            <div class="header-left">
+              <div class="logo-dot">KY</div>
+              <div class="app-title-block">
+                <div class="app-name">KawachYatri</div>
+                <div class="app-subtitle">Trip in Progress · Live Monitoring</div>
+              </div>
+            </div>
+            <div class="header-right">
+              <div class="user-id-pill">ID: STSM-USER-001</div>
+              <div class="trip-status-pill"><span class="status-dot"></span> Trip active · Geo-fence ON</div>
+            </div>
+          </header>
+
+          <main>
+            <div class="card">
+              <div class="card-header-row">
+                <div>
+                  <h2>Trip in progress</h2>
+                  <span class="subtitle">AI safety monitoring is active</span>
+                </div>
+                <span class="pill-label">LIVE</span>
+              </div>
+
+              <div class="trip-mini-card">
+                <div class="trip-mini-row"><span class="trip-mini-label">From → To</span><span class="trip-mini-value">${trip.from} → ${trip.to}</span></div>
+                <div class="trip-mini-row"><span class="trip-mini-label">Safe zone radius</span><span class="trip-mini-value">${trip.radius ? trip.radius + ' km around route' : '—'}</span></div>
+                <div class="trip-mini-row"><span class="trip-mini-label">Travellers / Mode</span><span class="trip-mini-value">${trip.travellers || 1} · ${trip.mode || '—'}</span></div>
+                <div class="trip-mini-row" style="margin-top:6px; color:var(--text-soft);">Notes: ${trip.notes ? trip.notes : '—'}</div>
+              </div>
+
+              <div class="btn-row" style="margin-top:12px;">
+                <button class="btn btn-danger" id="inline-sos">🆘 Trigger SOS</button>
+                <button class="btn btn-soft" id="inline-end">✅ End Trip & Turn Off Monitoring</button>
+                <button class="btn btn-ghost" id="inline-extend">🕒 Extend Trip Time</button>
+              </div>
+
+              <p class="muted" style="margin-top:12px;">This is an inline fallback because the server redirected navigation. Use the buttons above for demo actions.</p>
+            </div>
+          </main>
+        `;
+
+        // Wire up inline buttons
+        const sos = document.getElementById('inline-sos');
+        if (sos) sos.addEventListener('click', () => alert('SOS triggered (demo) — contacting guardian & police'));
+        const end = document.getElementById('inline-end');
+        if (end) end.addEventListener('click', () => { localStorage.removeItem('activeTrip'); location.href = '/packege/homePage.html'; });
+        const ext = document.getElementById('inline-extend');
+        if (ext) ext.addEventListener('click', () => alert('Extend trip (demo) — open setup to modify end time'));
+
+      } catch (e) {
+        console.error('renderInlineTripProgress failed', e);
+        alert('Could not render inline trip progress — navigation likely blocked by server.');
       }
     }
 

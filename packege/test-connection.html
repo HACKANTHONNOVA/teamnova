@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Trip Connection</title>
+  <style>
+    body {
+      font-family: system-ui;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    .test-section {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 20px 0;
+      border: 1px solid #334155;
+    }
+    button {
+      background: #22c55e;
+      color: #022c22;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      margin: 5px;
+    }
+    button:hover { background: #16a34a; }
+    .result {
+      margin-top: 15px;
+      padding: 12px;
+      background: #0f172a;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .success { color: #22c55e; }
+    .error { color: #ef4444; }
+    .info { color: #3b82f6; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Trip Connection Test</h1>
+  
+  <div class="test-section">
+    <h2>Test 1: localStorage Save & Read</h2>
+    <button onclick="testLocalStorage()">Run Test</button>
+    <div id="test1-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 2: Create Sample Trip</h2>
+    <button onclick="createSampleTrip()">Create Sample Trip</button>
+    <button onclick="viewActiveTrip()">View Active Trip</button>
+    <button onclick="clearActiveTrip()">Clear Active Trip</button>
+    <div id="test2-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 3: Navigate to Trip Progress</h2>
+    <button onclick="navigateToProgress()">Go to Trip Progress Page</button>
+    <div id="test3-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Quick Links</h2>
+    <button onclick="location.href='setuptrip.html'">Setup Trip Page</button>
+    <button onclick="location.href='tripprogress.html'">Trip Progress Page</button>
+    <button onclick="location.href='homePage.html'">Home Page</button>
+  </div>
+
+  <script>
+    function log(elementId, message, type = 'info') {
+      const el = document.getElementById(elementId);
+      const color = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+      el.innerHTML += `<div class="${color}">${message}</div>`;
+    }
+
+    function testLocalStorage() {
+      const resultEl = document.getElementById('test1-result');
+      resultEl.innerHTML = '';
+      
+      try {
+        // Test write
+        const testData = { test: 'value', timestamp: Date.now() };
+        localStorage.setItem('test-key', JSON.stringify(testData));
+        log('test1-result', '✓ localStorage write successful', 'success');
+        
+        // Test read
+        const retrieved = JSON.parse(localStorage.getItem('test-key'));
+        if (retrieved.test === 'value') {
+          log('test1-result', '✓ localStorage read successful', 'success');
+        } else {
+          log('test1-result', '✗ localStorage read returned incorrect data', 'error');
+        }
+        
+        // Cleanup
+        localStorage.removeItem('test-key');
+        log('test1-result', '✓ Test complete - localStorage is working!', 'success');
+        
+      } catch (e) {
+        log('test1-result', '✗ Error: ' + e.message, 'error');
+      }
+    }
+
+    function createSampleTrip() {
+      const resultEl = document.getElementById('test2-result');
+      resultEl.innerHTML = '';
+      
+      try {
+        const sampleTrip = {
+          from: 'Mysuru Palace',
+          to: 'Chamundi Hills',
+          radius: 5,
+          start: '2025-12-15 09:00',
+          end: '2025-12-15 18:00',
+          travellers: 2,
+          mode: 'Taxi',
+          notes: 'Test trip for connection verification',
+          status: 'active',
+          startedAt: new Date().toISOString()
+        };
+        
+        localStorage.setItem('activeTrip', JSON.stringify(sampleTrip));
+        log('test2-result', '✓ Sample trip created and saved', 'success');
+        log('test2-result', `From: ${sampleTrip.from} → To: ${sampleTrip.to}`, 'info');
+        log('test2-result', `Travellers: ${sampleTrip.travellers} · Mode: ${sampleTrip.mode}`, 'info');
+        
+      } catch (e) {
+        log('test2-result', '✗ Error creating trip: ' + e.message, 'error');
+      }
+    }
+
+    function viewActiveTrip() {
+      const resultEl = document.getElementById('test2-result');
+      resultEl.innerHTML = '';
+      
+      try {
+        const raw = localStorage.getItem('activeTrip');
+        if (!raw) {
+          log('test2-result', 'No active trip found in localStorage', 'info');
+          return;
+        }
+        
+        const trip = JSON.parse(raw);
+        log('test2-result', '✓ Active trip found:', 'success');
+        log('test2-result', JSON.stringify(trip, null, 2), 'info');
+        
+      } catch (e) {
+        log('test2-result', '✗ Error reading trip: ' + e.message, 'error');
+      }
+    }
+
+    function clearActiveTrip() {
+      const resultEl = document.getElementById('test2-result');
+      resultEl.innerHTML = '';
+      
+      try {
+        localStorage.removeItem('activeTrip');
+        log('test2-result', '✓ Active trip cleared', 'success');
+      } catch (e) {
+        log('test2-result', '✗ Error: ' + e.message, 'error');
+      }
+    }
+
+    function navigateToProgress() {
+      const resultEl = document.getElementById('test3-result');
+      resultEl.innerHTML = '';
+      
+      // Check if trip exists first
+      const hasTrip = localStorage.getItem('activeTrip');
+      if (!hasTrip) {
+        log('test3-result', '⚠ No active trip found. Creating sample trip first...', 'info');
+        createSampleTrip();
+        setTimeout(() => {
+          log('test3-result', '→ Navigating to trip progress page...', 'success');
+          location.href = 'tripprogress.html';
+        }, 1000);
+      } else {
+        log('test3-result', '✓ Active trip exists', 'success');
+        log('test3-result', '→ Navigating to trip progress page...', 'info');
+        setTimeout(() => {
+          location.href = 'tripprogress.html';
+        }, 500);
+      }
+    }
+
+    // Auto-run basic check on load
+    window.addEventListener('load', function() {
+      const hasTrip = localStorage.getItem('activeTrip');
+      console.log('Test page loaded');
+      console.log('Active trip exists:', !!hasTrip);
+      if (hasTrip) {
+        console.log('Active trip data:', JSON.parse(hasTrip));
+      }
+    });
+  </script>
+</body>
+</html>
