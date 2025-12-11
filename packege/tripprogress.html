@@ -126,6 +126,16 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      border: none;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .header-left:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+      border-radius: 12px;
     }
 
     .logo-dot {
@@ -142,6 +152,20 @@
       box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.7);
     }
 
+    .user-initial-icon {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #bbf7d0, #16a34a);
+      color: #022c22;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
     .app-title-block {
       display: flex;
       flex-direction: column;
@@ -152,6 +176,11 @@
       font-size: 14px;
       font-weight: 600;
       letter-spacing: 0.03em;
+      color: #ffffff;
+    }
+
+    [data-theme="light"] .app-name {
+      color: #000000;
     }
 
     .app-subtitle {
@@ -188,6 +217,10 @@
       align-items: center;
       gap: 5px;
       color: #bbf7d0;
+    }
+
+    [data-theme="light"] .trip-status-pill {
+      color: #15803d;
     }
 
     .theme-toggle {
@@ -466,13 +499,13 @@
 
     <!-- Header -->
     <header class="app-header">
-      <div class="header-left">
-        <div class="logo-dot">KY</div>
+      <button class="header-left" type="button" onclick="location.href='/profile'" aria-label="Go to profile" style="display: flex; align-items: center; gap: 10px;">
+        <div id="userInitialIcon" class="user-initial-icon">U</div>
         <div class="app-title-block">
-          <div class="app-name">KawachYatri</div>
+          <div id="userProfileName" class="app-name">User</div>
           <div class="app-subtitle">Trip in Progress · Live Monitoring</div>
         </div>
-      </div>
+      </button>
       <div class="header-right">
         <div class="user-id-pill">ID: STSM-USER-001</div>
         <div class="trip-status-pill">
@@ -600,6 +633,30 @@
           }
           document.documentElement.setAttribute('data-theme', saved);
           updateThemeUI(saved);
+        })();
+
+        // Load and display user profile in header
+        (function loadProfile() {
+          try {
+            const profileData = JSON.parse(localStorage.getItem('profile_history_v1')) || {
+              name: 'Traveller',
+              phone: '',
+              guardian: '',
+              history: []
+            };
+
+            const getInitial = (name) => {
+              if (!name) return 'U';
+              return name[0].toUpperCase();
+            };
+
+            const userProfileName = document.getElementById('userProfileName');
+            const userInitialIcon = document.getElementById('userInitialIcon');
+            if (userProfileName) userProfileName.textContent = profileData.name || 'Traveller';
+            if (userInitialIcon) userInitialIcon.textContent = getInitial(profileData.name);
+          } catch (e) {
+            console.warn('Failed to load profile', e);
+          }
         })();
 
         // Load active trip from localStorage and populate UI
