@@ -58,6 +58,7 @@ public class backend {
 		server.createContext("/api/register", new RegisterHandler());
 		server.createContext("/api/indices", new IndicesHandler());
 		server.createContext("/api/mappls-key", new MapplsKeyHandler());
+		server.createContext("/api/detect-location", new LocationDetectionHandler());
 
 		server.setExecutor(null);
 		server.start();
@@ -561,5 +562,194 @@ public class backend {
 		}
 
 		private String nullable(String s) { return s == null ? "" : s; }
+	}
+
+	/**
+	 * LocationDetectionHandler: Provides map-based location detection API
+	 * 
+	 * Endpoints:
+	 * - POST /api/detect-location (with JSON: {lat, lng})
+	 *   Returns: Reverse geocoded address + nearby places using Mappls API
+	 * 
+	 * Supports both Mappls and fallback to OpenStreetMap
+	 */
+	private static class LocationDetectionHandler implements HttpHandler {
+		@Override
+		public void handle(HttpExchange exchange) throws IOException {
+			if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+				exchange.sendResponseHeaders(405, -1);
+				exchange.close();
+				return;
+			}
+
+			// Read request body
+			byte[] body = exchange.getRequestBody().readAllBytes();
+			String json = new String(body, StandardCharsets.UTF_8);
+
+			// Extract lat and lng from JSON
+			String latStr = extractJsonValue(json, "lat");
+			String lngStr = extractJsonValue(json, "lng");
+
+			Headers headers = exchange.getResponseHeaders();
+			headers.add("Content-Type", "application/json; charset=UTF-8");
+			headers.add("Access-Control-Allow-Origin", "*");
+
+			if (latStr.isEmpty() || lngStr.isEmpty()) {
+				String errorResponse = "{\"error\":\"Missing lat or lng in request\"}";
+				exchange.sendResponseHeaders(400, errorResponse.getBytes(StandardCharsets.UTF_8).length);
+				try (OutputStream os = exchange.getResponseBody()) {
+					os.write(errorResponse.getBytes(StandardCharsets.UTF_8));
+				}
+				exchange.close();
+				return;
+			}
+
+			try {
+				double lat = Double.parseDouble(latStr);
+				double lng = Double.parseDouble(lngStr);
+
+				// Try Mappls API first
+				String mapplsKey = System.getenv("MAPPLS_API_KEY");
+				String result;
+
+				if (mapplsKey != null && !mapplsKey.isBlank()) {
+					result = reverseGeocodeWithMappls(lat, lng, mapplsKey);
+				} else {
+					// Fallback to OpenStreetMap Nominatim
+					result = reverseGeocodeWithOSM(lat, lng);
+				}
+
+				exchange.sendResponseHeaders(200, result.getBytes(StandardCharsets.UTF_8).length);
+				try (OutputStream os = exchange.getResponseBody()) {
+					os.write(result.getBytes(StandardCharsets.UTF_8));
+				}
+			} catch (Exception e) {
+				String errorResponse = String.format("{\"error\":\"%s\"}", e.getMessage());
+				exchange.sendResponseHeaders(500, errorResponse.getBytes(StandardCharsets.UTF_8).length);
+				try (OutputStream os = exchange.getResponseBody()) {
+					os.write(errorResponse.getBytes(StandardCharsets.UTF_8));
+				}
+			}
+
+			exchange.close();
+		}
+
+		private String reverseGeocodeWithMappls(double lat, double lng, String apiKey) throws IOException {
+			// Mappls Reverse Geocoding API
+			String urlStr = String.format(
+				"https://apis.mappls.com/advancedmaps/v1/%s/rev_geocode?lat=%f&lng=%f",
+				apiKey, lat, lng
+			);
+
+			URL url = new URL(urlStr);
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+			conn.setRequestMethod("GET");
+			conn.setConnectTimeout(5000);
+			conn.setReadTimeout(5000);
+
+			int responseCode = conn.getResponseCode();
+			if (responseCode == 200) {
+				BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+				StringBuilder response = new StringBuilder();
+				String line;
+				while ((line = reader.readLine()) != null) {
+					response.append(line);
+				}
+				reader.close();
+
+				// Parse Mappls response and format
+				String address = extractMapplsAddress(response.toString());
+				return String.format("{\"address\":\"%s\",\"lat\":%f,\"lng\":%f,\"source\":\"mappls\"}", 
+					address, lat, lng);
+			} else {
+				throw new IOException("Mappls API error: " + responseCode);
+			}
+		}
+
+		private String reverseGeocodeWithOSM(double lat, double lng) throws IOException {
+			// OpenStreetMap Nominatim API (fallback)
+			String urlStr = String.format(
+				"https://nominatim.openstreetmap.org/reverse?lat=%f&lon=%f&format=json",
+				lat, lng
+			);
+
+			URL url = new URL(urlStr);
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+			conn.setRequestMethod("GET");
+			conn.setRequestProperty("User-Agent", "KawachYatri/1.0");
+			conn.setConnectTimeout(5000);
+			conn.setReadTimeout(5000);
+
+			int responseCode = conn.getResponseCode();
+			if (responseCode == 200) {
+				BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+				StringBuilder response = new StringBuilder();
+				String line;
+				while ((line = reader.readLine()) != null) {
+					response.append(line);
+				}
+				reader.close();
+
+				// Extract display_name from OSM response
+				String displayName = extractJsonValue(response.toString(), "display_name");
+				return String.format("{\"address\":\"%s\",\"lat\":%f,\"lng\":%f,\"source\":\"osm\"}", 
+					displayName, lat, lng);
+			} else {
+				throw new IOException("OSM API error: " + responseCode);
+			}
+		}
+
+		private String extractMapplsAddress(String mapplsJson) {
+			// Extract formatted address from Mappls response
+			// Mappls typically returns results[0].formatted_address
+			String formatted = extractJsonValue(mapplsJson, "formatted_address");
+			if (!formatted.isEmpty()) {
+				return formatted;
+			}
+			
+			// Fallback: try to build address from components
+			String locality = extractJsonValue(mapplsJson, "locality");
+			String city = extractJsonValue(mapplsJson, "city");
+			String state = extractJsonValue(mapplsJson, "state");
+			
+			StringBuilder addr = new StringBuilder();
+			if (!locality.isEmpty()) addr.append(locality).append(", ");
+			if (!city.isEmpty()) addr.append(city).append(", ");
+			if (!state.isEmpty()) addr.append(state);
+			
+			return addr.length() > 0 ? addr.toString() : "Address not found";
+		}
+
+		private String extractJsonValue(String json, String key) {
+			// Simple JSON value extraction: "key":"value" or "key":value
+			String needle = "\"" + key + "\"";
+			int i = json.indexOf(needle);
+			if (i == -1) return "";
+			
+			int colonIdx = json.indexOf(':', i + needle.length());
+			if (colonIdx == -1) return "";
+			
+			int startIdx = colonIdx + 1;
+			while (startIdx < json.length() && Character.isWhitespace(json.charAt(startIdx))) {
+				startIdx++;
+			}
+			
+			if (startIdx >= json.length()) return "";
+			
+			// Check if value is quoted
+			if (json.charAt(startIdx) == '"') {
+				startIdx++;
+				int endIdx = json.indexOf('"', startIdx);
+				if (endIdx == -1) return "";
+				return json.substring(startIdx, endIdx);
+			} else {
+				// Unquoted value (number, boolean, etc)
+				int endIdx = startIdx;
+				while (endIdx < json.length() && json.charAt(endIdx) != ',' && json.charAt(endIdx) != '}') {
+					endIdx++;
+				}
+				return json.substring(startIdx, endIdx).trim();
+			}
+		}
 	}
 }

@@ -544,26 +544,9 @@
           <!-- START: replace old starting location block with this -->
           <div class="field" id="startingLocationField">
             <label for="fromInput">Starting location</label>
-
-            <!-- visible field (read-only) - full width -->
-            <input id="fromInput" type="text" placeholder="Tap 'Detect' to get current location" readonly style="width:100%; margin-bottom:8px;" />
-
-            <!-- buttons on next line -->
-            <div style="display:flex; gap:8px; width:100%;">
-              <!-- one-shot detect -->
-              <button type="button" id="btnDetectLocation" class="btn btn-ghost" style="flex:1;">
-                📍 Detect
-              </button>
-
-              <!-- start/stop live tracking -->
-              <button type="button" id="btnToggleTracking" class="btn btn-outline" style="flex:1;">
-                🔄 Start tracking
-              </button>
-            </div>
-
-            <div class="field-hint" id="locHint" style="margin-top:6px;">
-              Live: <span id="locStatus">not active</span>
-              <span style="margin-left:12px; color:var(--text-soft);">You can edit the value manually after detection.</span>
+            <input id="fromInput" type="text" placeholder="Enter your starting location" required style="width:100%;" />
+            <div class="field-hint">
+              Enter your current location or starting point manually.
             </div>
           </div>
           <!-- END -->
@@ -575,10 +558,7 @@
 
           <div class="field">
             <label for="radius">Safe zone radius (km)</label>
-            <div style="display:flex; gap:8px; align-items:center;">
-              <input id="radius" type="number" min="1" max="50" value="5" style="flex:1;" />
-              <button type="button" class="btn btn-outline" style="flex:0 0 auto; width:auto;" onclick="openRadiusPicker()">📍 Google Maps Picker</button>
-            </div>
+            <input id="radius" type="number" min="1" max="50" value="5" required />
             <div class="field-hint">
               If you cross this radius, a geo-fence alert will be raised.
             </div>
@@ -810,6 +790,32 @@
       }
     }
 
+    // Backend API for map-based location detection
+    async function detectLocationWithBackendAPI(lat, lon) {
+      try {
+        const response = await fetch('/api/detect-location', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ lat, lng: lon })
+        });
+
+        if (!response.ok) {
+          throw new Error('Backend API failed');
+        }
+
+        const data = await response.json();
+        return {
+          address: data.address,
+          source: data.source || 'backend'
+        };
+      } catch (err) {
+        console.error('Backend API error:', err);
+        return null;
+      }
+    }
+
     // Location detection
     let trackingIntervalId = null;
 
@@ -838,10 +844,22 @@
 
         fromInput.value = 'Getting nearby address...';
 
-        // Load Google Maps and get address
+        // Try backend API first (supports Mappls + OSM fallback)
+        let backendResult = await detectLocationWithBackendAPI(lat, lon);
+        
+        if (backendResult && backendResult.address) {
+          // Backend API succeeded (Mappls or OSM)
+          const exactCoords = `${lat.toFixed(8)}, ${lon.toFixed(8)}`;
+          fromInput.value = `${backendResult.address}\n${exactCoords} (±${accuracy.toFixed(0)}m)`;
+          fromInput.removeAttribute('readonly');
+          showToast(`Location detected via ${backendResult.source.toUpperCase()} with ${accuracy.toFixed(0)}m accuracy`);
+          return;
+        }
+
+        // Fallback to Google Maps client-side if backend fails
         loadGoogleMapsScript(async (err) => {
           if (err) {
-            // Fallback to OpenStreetMap if Google Maps fails
+            // Final fallback to OpenStreetMap direct
             try {
               const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
               const data = await response.json();
@@ -948,18 +966,10 @@
       return trimmed;
     }
 
-    // Wire up buttons
+    // Buttons removed - manual input only
     document.addEventListener('DOMContentLoaded', () => {
-      const btnDetect = document.getElementById('btnDetectLocation');
-      const btnToggle = document.getElementById('btnToggleTracking');
-
-      if (btnDetect) {
-        btnDetect.addEventListener('click', detectLocation);
-      }
-
-      if (btnToggle) {
-        btnToggle.addEventListener('click', toggleTracking);
-      }
+      // Location detection and tracking buttons have been removed
+      // Users now enter location manually
     });
 
     function startTrip(event) {
