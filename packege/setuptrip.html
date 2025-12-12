@@ -1120,7 +1120,6 @@
         // no-op if localStorage unavailable
       }
     })();
-    }
 
     function ensureMapsScriptLoaded(cb) {
       if (window.google && window.google.maps) { cb(); return; }
@@ -1302,7 +1301,8 @@
       const modal = document.getElementById('radiusPickerModal');
       if (modal) modal.remove();
       showToast('Safe zone updated from map.');
-=======
+    }
+
     // Generate or retrieve unique user ID
     function generateUserId() {
       let userId = localStorage.getItem('kawachyatri_user_id');
@@ -1313,7 +1313,6 @@
         localStorage.setItem('kawachyatri_user_id', userId);
       }
       return userId;
->>>>>>> refs/remotes/origin/main
     }
 
     // Load and display profile data in header

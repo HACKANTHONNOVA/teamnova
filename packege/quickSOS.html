@@ -330,25 +330,29 @@
     const themeToggle = document.querySelector(".theme-toggle");
 
     function applyTheme(theme) {
+        // Keep outer background consistent with other pages
         const bgGradient = "radial-gradient(circle at top, #0f172a, #020617 60%)";
-        document.body.style.background = bgGradient; // keep outer background dark on both themes
+        document.body.style.background = bgGradient;
+        document.documentElement.setAttribute('data-theme', theme);
+        document.body.setAttribute('data-theme', theme);
 
+        const sosBtn = document.getElementById("sosButton");
+        const icon = document.getElementById("theme-icon");
         if (theme === "dark") {
             document.body.style.color = "#e5e7eb";
-            document.getElementById("sosButton").style.background = "radial-gradient(circle at 30% 0, #fee2e2, #b91c1c 70%)";
-            document.getElementById("theme-icon").textContent = "🌙 Dark";
+            if (sosBtn) sosBtn.style.background = "radial-gradient(circle at 30% 0, #fee2e2, #b91c1c 70%)";
+            if (icon) icon.textContent = "🌙 Dark";
         } else {
             document.body.style.color = "#000000";
-            document.getElementById("sosButton").style.background = "radial-gradient(circle at 30% 0, #fecaca, #dc2626 70%)";
-            document.getElementById("theme-icon").textContent = "☀️ Light";
+            if (sosBtn) sosBtn.style.background = "radial-gradient(circle at 30% 0, #fecaca, #dc2626 70%)";
+            if (icon) icon.textContent = "☀️ Light";
         }
     }
 
     function toggleTheme() {
-        let current = document.body.getAttribute("data-theme");
-        let next = current === "dark" ? "light" : "dark";
-        document.body.setAttribute("data-theme", next);
-        localStorage.setItem("quicksos-theme", next);
+        let current = document.documentElement.getAttribute("data-theme") || document.body.getAttribute("data-theme");
+        let next = current === "light" ? "dark" : "light";
+        localStorage.setItem("theme", next);
         applyTheme(next);
     }
 
@@ -360,14 +364,13 @@
         window.location.href = "/profile";
     }
 
-    // Load saved theme on page load
+    // Load saved theme on page load (shared key "theme")
     (function() {
-        let savedTheme = localStorage.getItem("quicksos-theme");
+        let savedTheme = localStorage.getItem("theme");
         if (!savedTheme) {
             const isMobile = window.innerWidth <= 768;
             savedTheme = isMobile ? "light" : "dark";
         }
-        document.body.setAttribute("data-theme", savedTheme);
         applyTheme(savedTheme);
     })();
 

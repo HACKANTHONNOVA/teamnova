@@ -655,7 +655,8 @@
         (function initTheme() {
           let saved = localStorage.getItem('theme');
           if (!saved) {
-            saved = 'light'; // default to light theme
+            const isMobile = window.innerWidth <= 768;
+            saved = isMobile ? 'light' : 'dark';
           }
           document.documentElement.setAttribute('data-theme', saved);
           updateThemeUI(saved);
