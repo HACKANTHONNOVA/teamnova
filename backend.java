@@ -57,6 +57,7 @@ public class backend {
 		server.createContext("/api/user", new UserDataHandler());
 		server.createContext("/api/register", new RegisterHandler());
 		server.createContext("/api/indices", new IndicesHandler());
+		server.createContext("/api/mappls-key", new MapplsKeyHandler());
 
 		server.setExecutor(null);
 		server.start();
@@ -428,6 +429,38 @@ public class backend {
 				case "port blair" -> 88;
 				default -> 70 + (Math.abs(city.hashCode()) % 15); // Generic fallback with variation
 			};
+		}
+	}
+
+	private static class MapplsKeyHandler implements HttpHandler {
+		@Override
+		public void handle(HttpExchange exchange) throws IOException {
+			if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+				exchange.sendResponseHeaders(405, -1);
+				exchange.close();
+				return;
+			}
+
+			String key = System.getenv("MAPPLS_API_KEY");
+			Headers headers = exchange.getResponseHeaders();
+			headers.add("Content-Type", "application/json; charset=UTF-8");
+
+			if (key == null || key.isBlank()) {
+				String response = "{\"error\":\"Mappls key not configured on server\"}";
+				exchange.sendResponseHeaders(404, response.getBytes(StandardCharsets.UTF_8).length);
+				try (OutputStream os = exchange.getResponseBody()) {
+					os.write(response.getBytes(StandardCharsets.UTF_8));
+				}
+				exchange.close();
+				return;
+			}
+
+			String response = String.format("{\"key\":\"%s\"}", key.trim());
+			exchange.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
+			try (OutputStream os = exchange.getResponseBody()) {
+				os.write(response.getBytes(StandardCharsets.UTF_8));
+			}
+			exchange.close();
 		}
 	}
 	private static class RegisterHandler implements HttpHandler {
