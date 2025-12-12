@@ -863,9 +863,9 @@
           console.error('startTrip: could not save trip to localStorage', e);
         }
 
-        // Navigate to the /trip-progress server route (which serves tripprogress.html)
-        const target = '/trip-progress';
-        console.log('startTrip: navigating to server route', target);
+        // Navigate to tripprogress.html
+        const target = 'tripprogress.html';
+        console.log('startTrip: navigating to trip progress', target);
 
         // Give localStorage a moment to persist, then navigate
         setTimeout(() => {
@@ -1097,27 +1097,29 @@
       initDateRestrictions();
     })();
 
-<<<<<<< HEAD
-    // Google Maps API key management
-    let GOOGLE_MAPS_API_KEY = localStorage.getItem('gmaps_api_key') || '';
+    // Load and display profile data in header
+    (function() {
+      try {
+        const profileData = JSON.parse(localStorage.getItem('profile_history_v1')) || {
+          name: 'Traveller',
+          phone: '',
+          guardian: '',
+          history: []
+        };
 
-    function ensureGoogleMapsKey(cb) {
-      if (GOOGLE_MAPS_API_KEY && !GOOGLE_MAPS_API_KEY.includes('AIza')) {
-        // Key looks wrong; prompt again
-        GOOGLE_MAPS_API_KEY = '';
+        const getInitial = (name) => {
+          if (!name) return 'U';
+          return name[0].toUpperCase();
+        };
+
+        const userProfileName = document.getElementById('userProfileName');
+        const userInitialIcon = document.getElementById('userInitialIcon');
+        if (userProfileName) userProfileName.textContent = profileData.name || 'Traveller';
+        if (userInitialIcon) userInitialIcon.textContent = getInitial(profileData.name);
+      } catch (e) {
+        // no-op if localStorage unavailable
       }
-      if (!GOOGLE_MAPS_API_KEY) {
-        const key = prompt('Enter your Google Maps API key (public key with Maps JavaScript API enabled):');
-        if (key && key.trim()) {
-          GOOGLE_MAPS_API_KEY = key.trim();
-          localStorage.setItem('gmaps_api_key', GOOGLE_MAPS_API_KEY);
-        } else {
-          alert('Google Maps API key required.');
-          cb(new Error('missing-key'));
-          return;
-        }
-      }
-      cb();
+    })();
     }
 
     function ensureMapsScriptLoaded(cb) {
